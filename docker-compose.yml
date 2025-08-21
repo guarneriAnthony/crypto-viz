@@ -1,0 +1,47 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: crypto_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - crypto-net
+
+  scraper:
+    build: ./scraper
+    container_name: crypto_scraper
+    depends_on:
+      - redis
+    networks:
+      - crypto-net
+
+  consumer:
+    build: ./consumer
+    container_name: crypto_consumer
+    depends_on:
+      - redis
+    volumes:
+      - ./data:/data  # Volume partagé pour DuckDB
+    networks:
+      - crypto-net
+
+  dashboard:
+    build: ./dashboard
+    container_name: crypto_dashboard
+    ports:
+      - "8501:8501"  # Port pour Streamlit
+    depends_on:
+      - consumer
+    volumes:
+      - ./data:/data  # Même volume que le consumer
+    networks:
+      - crypto-net
+
+volumes:
+  redis_data:
+
+networks:
+  crypto-net:
+    driver: bridge

@@ -6,7 +6,7 @@ import os
 
 redis_client = redis.Redis(host="redis", port=6379, db=0)
 QUEUE_NAME = "crypto_data"
-API_KEY = "f6f6031f-2dd6-45c4-8b98-2df503c0efb2"  # Ton API key
+API_KEY = os.getenv("COINMARKETCAP_API_KEY", "your-api-key-here")  # Ton API key
 BASE_URL = "https://pro-api.coinmarketcap.com/v1/cryptocurrency"
 
 def get_crypto_data():

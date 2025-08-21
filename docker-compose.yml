@@ -14,6 +14,8 @@ services:
     container_name: crypto_scraper
     depends_on:
       - redis
+    environment:
+      - COINMARKETCAP_API_KEY=${COINMARKETCAP_API_KEY:-your-api-key-here}
     networks:
       - crypto-net
 
@@ -23,7 +25,7 @@ services:
     depends_on:
       - redis
     volumes:
-      - ./data:/data  # Volume partagé pour DuckDB
+      - ./data:/data
     networks:
       - crypto-net
 
@@ -31,11 +33,11 @@ services:
     build: ./dashboard
     container_name: crypto_dashboard
     ports:
-      - "8501:8501"  # Port pour Streamlit
+      - "8501:8501"
     depends_on:
       - consumer
     volumes:
-      - ./data:/data  # Même volume que le consumer
+      - ./data:/data
     networks:
       - crypto-net
 

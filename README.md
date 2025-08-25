@@ -1,4 +1,4 @@
-# 📊 CryptoViz - Dashboard de Visualisation Crypto en Temps Réel
+#  CryptoViz - Dashboard de Visualisation Crypto en Temps Réel
 
 <div align="center">
 
@@ -10,17 +10,17 @@
 
 **Plateforme complète de visualisation des cryptomonnaies avec streaming temps réel**
 
-[🚀 Demo Live](#demo) • [⚡ Installation](#installation) • [📊 Fonctionnalités](#fonctionnalités) • [🛠️ Architecture](#architecture)
+[Demo Live](#demo) • [Installation](#installation) • [Fonctionnalités](#fonctionnalités) • [Architecture](#architecture)
 
 </div>
 
 ---
 
-## 🎯 À Propos
+##  À Propos
 
 **CryptoViz** est une plateforme moderne de visualisation des cryptomonnaies qui collecte, traite et affiche les données de prix en temps réel. Utilisant une architecture microservices robuste avec Docker, le système offre des graphiques interactifs et des analyses avancées pour suivre les tendances du marché crypto.
 
-### ✨ Points Forts
+###  Points Forts
 
 - 📈 **Streaming temps réel** - Données mises à jour toutes les 5 minutes
 - 🎨 **Graphiques interactifs** - Powered by Plotly avec 3 modes d'affichage
@@ -31,28 +31,28 @@
 
 ---
 
-## 🚀 Demo
+##  Demo
 
 **🌐 Version Live :** [crypto.silentcry.fr](http://crypto.silentcry.fr)
 
-### 📸 Aperçu
+###  Aperçu
 
 ```
 📊 CryptoViz Dashboard - Analyse Temps Réel des Cryptomonnaies
 
 ┌─────────────────────────────────────────────────────────────┐
-│  💰 Cryptos haute valeur (>$1000): Bitcoin, Ethereum, BNB  │
-│  💎 Cryptos moyenne valeur ($1-$1000): XRP, Cardano...     │
-│  🪙 Cryptos petite valeur (<$1): USDC, USDT, Dogecoin...   │
+│   Cryptos haute valeur (>$1000): Bitcoin, Ethereum, BNB  │
+│   Cryptos moyenne valeur ($1-$1000): XRP, Cardano...     │
+│   Cryptos petite valeur (<$1): USDC, USDT, Dogecoin...   │
 └─────────────────────────────────────────────────────────────┘
 
-📊 Données chargées: 160 lignes
+ Données chargées: 160 lignes
 🟢 Streaming actif (dernière donnée: 45s)
 ```
 
 ---
 
-## ⚡ Installation Rapide
+##  Installation Rapide
 
 ### Prérequis
 
@@ -60,7 +60,7 @@
 - 🔑 **API Key CoinMarketCap** ([obtenir ici](https://pro.coinmarketcap.com/signup))
 - 🌐 **Port 8501** disponible
 
-### 🚀 Démarrage en 30 secondes
+###  Démarrage en 30 secondes
 
 ```bash
 # 1. Cloner le projet
@@ -77,24 +77,24 @@ docker compose up -d
 open http://localhost:8501
 ```
 
-**🎉 C'est tout ! Votre dashboard crypto est maintenant actif.**
+** C'est tout ! Votre dashboard crypto est maintenant actif.**
 
 ---
 
-## 📊 Fonctionnalités
+##  Fonctionnalités
 
-### 🎨 **Dashboard Interactif**
+###  **Dashboard Interactif**
 
 <table>
 <tr>
 <td width="50%">
 
-**📈 Modes de Visualisation**
+** Modes de Visualisation**
 - **Graphique unique** - Échelle partagée
 - **Graphiques séparés** - Échelles individuelles  
 - **Vue pourcentage** - Variations relatives
 
-**🔧 Contrôles Avancés**
+** Contrôles Avancés**
 - Sélection multi-cryptos
 - Filtrage par période
 - Actualisation automatique
@@ -103,13 +103,13 @@ open http://localhost:8501
 </td>
 <td width="50%">
 
-**📊 Métriques Temps Réel**
+** Métriques Temps Réel**
 - Total d'enregistrements
 - Cryptomonnaies suivies
 - Dernière mise à jour
 - Statut streaming
 
-**💡 Intelligence**
+** Intelligence**
 - Détection automatique des échelles
 - Groupement par valeur
 - Messages d'aide contextuels
@@ -118,7 +118,7 @@ open http://localhost:8501
 </tr>
 </table>
 
-### ⚡ **Pipeline de Données**
+###  **Pipeline de Données**
 
 ```mermaid
 graph LR
@@ -133,7 +133,7 @@ graph LR
     style G fill:#9f9,stroke:#333,stroke-width:2px
 ```
 
-**🔄 Flux de Données :**
+** Flux de Données :**
 1. **Scraper** collecte via API CoinMarketCap (5 min)
 2. **Redis** met en queue les données JSON
 3. **Consumer** traite par batch (10 items)
@@ -142,9 +142,9 @@ graph LR
 
 ---
 
-## 🛠️ Architecture Technique
+##  Architecture Technique
 
-### 🐳 **Microservices Docker**
+###  **Microservices Docker**
 
 | Service | Technologie | Rôle | Port |
 |---------|-------------|------|------|
@@ -153,7 +153,7 @@ graph LR
 | **Dashboard** | Streamlit + Plotly | Interface utilisateur | 8501 |
 | **Redis** | Redis 7 Alpine | Queue de messages | 6379 |
 
-### 💾 **Stockage des Données**
+###  **Stockage des Données**
 
 ```
 /data/
@@ -161,7 +161,7 @@ graph LR
 └── (bind mount partagé)       # Persistance hôte
 ```
 
-**🗃️ Schema DuckDB :**
+** Schema DuckDB :**
 ```sql
 CREATE TABLE crypto_prices (
     name VARCHAR,                -- Nom de la crypto
@@ -173,7 +173,7 @@ CREATE TABLE crypto_prices (
 );
 ```
 
-### 🔄 **Gestion de la Concurrence**
+###  **Gestion de la Concurrence**
 
 - **Connexions courtes** : Dashboard ferme automatiquement les connexions
 - **Batch processing** : Consumer traite par lots avec transactions
@@ -182,9 +182,9 @@ CREATE TABLE crypto_prices (
 
 ---
 
-## 📋 Configuration
+##  Configuration
 
-### 🔑 **Variables d'Environnement**
+###  **Variables d'Environnement**
 
 ```bash
 # Scraper Configuration
@@ -202,7 +202,7 @@ STREAMLIT_PORT=8501
 CACHE_TTL=60
 ```
 
-### 🐳 **Docker Compose**
+###  **Docker Compose**
 
 <details>
 <summary>📄 Voir la configuration complète</summary>
@@ -261,9 +261,9 @@ networks:
 
 ---
 
-## 🚀 Utilisation Avancée
+##  Utilisation Avancée
 
-### 📊 **Commandes Utiles**
+###  **Commandes Utiles**
 
 ```bash
 # Monitoring en temps réel
@@ -283,7 +283,7 @@ docker compose ps
 docker compose top
 ```
 
-### 🔧 **Maintenance**
+###  **Maintenance**
 
 ```bash
 # Backup des données
@@ -304,7 +304,7 @@ docker compose down
 docker compose up -d
 ```
 
-### 🛡️ **Sécurité & Production**
+###  **Sécurité & Production**
 
 ```bash
 # Restriction réseau (production)
@@ -327,9 +327,9 @@ deploy:
 
 ---
 
-## 🔍 Dépannage
+##  Dépannage
 
-### ❌ **Problèmes Courants**
+###  **Problèmes Courants**
 
 <details>
 <summary><strong>🔴 Dashboard ne s'affiche pas</strong></summary>
@@ -383,7 +383,7 @@ docker compose restart dashboard
 ```
 </details>
 
-### 📊 **Monitoring de Performance**
+###  **Monitoring de Performance**
 
 ```bash
 # Utilisation des ressources
@@ -405,9 +405,9 @@ print(f'Insertions dernière heure: {recent}')
 
 ---
 
-## 🤝 Contribution
+##  Contribution
 
-### 🛠️ **Développement Local**
+###  **Développement Local**
 
 ```bash
 # Setup environnement de dev
@@ -425,26 +425,26 @@ flake8 .
 black .
 ```
 
-### 📝 **Roadmap**
+###  **Roadmap**
 
-- [ ] 📱 **Mobile responsive** - Adaptation tablettes/mobiles
-- [ ] 🔔 **Alertes** - Notifications prix/variations
-- [ ] 📈 **Indicateurs techniques** - RSI, MACD, Bollinger
-- [ ] 🌍 **Multi-exchanges** - Binance, Kraken, Coinbase
-- [ ] 🏗️ **API REST** - Endpoints pour intégrations
-- [ ] 📊 **ML Predictions** - Modèles de prédiction prix
-- [ ] 🔐 **Authentication** - Système utilisateurs
-- [ ] ☁️ **Cloud deployment** - AWS/GCP/Azure
+- [ ]  **Mobile responsive** - Adaptation tablettes/mobiles
+- [ ]  **Alertes** - Notifications prix/variations
+- [ ]  **Indicateurs techniques** - RSI, MACD, Bollinger
+- [ ]  **Multi-exchanges** - Binance, Kraken, Coinbase
+- [ ]  **API REST** - Endpoints pour intégrations
+- [ ]  **ML Predictions** - Modèles de prédiction prix
+- [ ]  **Authentication** - Système utilisateurs
+- [ ]  **Cloud deployment** - AWS/GCP/Azure
 
 ---
 
-## 📜 Licence
+##  Licence
 
 MIT License - voir [LICENSE](LICENSE) pour plus de détails.
 
 ---
 
-## 📞 Support
+##  Support
 
 <div align="center">
 
@@ -453,9 +453,9 @@ MIT License - voir [LICENSE](LICENSE) pour plus de détails.
 [![GitHub Issues](https://img.shields.io/github/issues/user/crypto-viz?style=flat-square)](https://github.com/user/crypto-viz/issues)
 [![GitHub Discussions](https://img.shields.io/badge/GitHub-Discussions-purple?style=flat-square)](https://github.com/user/crypto-viz/discussions)
 
-**🆘 Problème technique ?** → [Ouvrir une issue](https://github.com/user/crypto-viz/issues/new)  
-**💡 Suggestion ?** → [Démarrer une discussion](https://github.com/user/crypto-viz/discussions/new)  
-**📧 Contact direct ?** → crypto-viz@example.com
+** Problème technique ?** → [Ouvrir une issue](https://github.com/user/crypto-viz/issues/new)  
+** Suggestion ?** → [Démarrer une discussion](https://github.com/user/crypto-viz/discussions/new)  
+** Contact direct ?** → crypto-viz@example.com
 
 </div>
 

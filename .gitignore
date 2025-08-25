@@ -83,3 +83,7 @@ htmlcov/
 # 📚 Documentation build
 docs/_build/
 site/
+
+# Environnements virtuels
+migration_env/
+*.backup

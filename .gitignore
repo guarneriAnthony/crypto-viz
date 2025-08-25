@@ -87,3 +87,37 @@ site/
 # Environnements virtuels
 migration_env/
 *.backup
+
+# Fichiers de backup
+*.backup
+*.bak
+*.old
+*.broken
+*~
+*.orig
+*.tmp
+
+# Logs et debug
+*.log
+debug.log
+*.debug
+
+# IDE et éditeurs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS générés
+.DS_Store
+Thumbs.db
+
+# Python cache (si ajouté plus tard)
+__pycache__/
+*.pyc
+*.pyo
+
+# Docker volumes et données temporaires
+volumes/
+data/temp/
+

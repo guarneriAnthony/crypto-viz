@@ -15,7 +15,7 @@ def init_database():
         # DuckDB gère automatiquement la concurrence depuis la v0.8+
         conn = duckdb.connect(database='/data/crypto_analytics.duckdb', read_only=False)
         
-        # Créer la table si elle n'existe pas
+        # Créer la table si elle n'existe pas avec la colonne source
         conn.execute("""
             CREATE TABLE IF NOT EXISTS crypto_prices (
                 name VARCHAR,
@@ -23,9 +23,20 @@ def init_database():
                 price DOUBLE,
                 percent_change_24h DOUBLE,
                 market_cap DOUBLE,
+                source VARCHAR,
                 timestamp TIMESTAMP
             )
         """)
+        
+        # Ajouter la colonne source si elle n'existe pas (pour la rétrocompatibilité)
+        try:
+            conn.execute("ALTER TABLE crypto_prices ADD COLUMN source VARCHAR")
+            print("ℹ️  Colonne source ajoutée à la table existante", flush=True)
+        except Exception as e:
+            if 'already exists' in str(e).lower():
+                pass  # La colonne existe déjà
+            else:
+                print(f"⚠️  Erreur lors de l'ajout de la colonne source: {e}", flush=True)
         
         conn.close()
         print("✅ Base de données initialisée", flush=True)
@@ -57,13 +68,15 @@ def process_batch(data_batch):
                     crypto_item['price'],
                     crypto_item['percent_change_24h'],
                     crypto_item['market_cap'],
+                    crypto_item.get('source', 'coinmarketcap'),  # Par défaut coinmarketcap si pas spécifié
                     crypto_item['timestamp']
                 ))
             
-            # Insertion en batch plus efficace
+            # Insertion en batch plus efficace avec la nouvelle colonne source
             conn.executemany("""
                 INSERT INTO crypto_prices 
-                VALUES (?, ?, ?, ?, ?, ?)
+                (name, symbol, price, percent_change_24h, market_cap, source, timestamp)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             """, insert_data)
             
             conn.commit()
@@ -88,7 +101,7 @@ def process_batch(data_batch):
 
 def process_data():
     """Lit les données de Redis et les stocke dans DuckDB"""
-    print("🚀 Consumer démarré...", flush=True)
+    print("🚀 Consumer démarré (avec support multi-sources)...", flush=True)
     
     # Initialiser la base avec plusieurs tentatives
     for attempt in range(3):
@@ -115,7 +128,8 @@ def process_data():
                 # Convertit JSON en dictionnaire Python
                 crypto_item = json.loads(data[1])
                 batch.append(crypto_item)
-                print(f"📥 Batch +1: {crypto_item['name']} ({len(batch)}/{batch_size})", flush=True)
+                source = crypto_item.get('source', 'coinmarketcap')
+                print(f"📥 Batch +1: {crypto_item['name']} ({source}) ({len(batch)}/{batch_size})", flush=True)
                 
                 # Traiter le batch si plein ou si timeout
                 if len(batch) >= batch_size or (time.time() - last_batch_time) > 30:

@@ -11,7 +11,7 @@ import time
 st.set_page_config(page_title="CryptoViz Multi-Sources Dashboard", layout="wide")
 
 # Titre avec icône multi-sources
-st.title("📊 CryptoViz Dashboard - Analyse Multi-Sources Temps Réel")
+st.title(" CryptoViz Dashboard - Analyse Multi-Sources Temps Réel")
 st.markdown("*Données agrégées de CoinMarketCap & CoinGecko*")
 
 def get_connection():
@@ -90,7 +90,7 @@ def get_data_period():
 min_data_date, max_data_date = get_data_period()
 
 # Sidebar avec filtres multi-sources
-st.sidebar.header("🎛️ Filtres Multi-Sources")
+st.sidebar.header("Filtres Multi-Sources")
 
 # Récupérer les sources disponibles
 sources_data = get_available_sources()
@@ -146,47 +146,34 @@ else:
 cryptos_with_prices = get_cryptos_with_prices(selected_sources)
 cryptos = cryptos_with_prices['name'].tolist()
 
-# Grouper les cryptos par gamme de prix
-if not cryptos_with_prices.empty:
-    high_value = cryptos_with_prices[cryptos_with_prices['avg_price'] > 1000]['name'].tolist()
-    mid_value = cryptos_with_prices[(cryptos_with_prices['avg_price'] > 1) & (cryptos_with_prices['avg_price'] <= 1000)]['name'].tolist()
-    low_value = cryptos_with_prices[cryptos_with_prices['avg_price'] <= 1]['name'].tolist()
-
-    if high_value:
-        st.sidebar.info("💰 **Haute valeur** (>$1000): " + ", ".join(high_value[:3]) + ("..." if len(high_value) > 3 else ""))
-    if mid_value:
-        st.sidebar.info("💎 **Moyenne valeur** ($1-$1000): " + ", ".join(mid_value[:3]) + ("..." if len(mid_value) > 3 else ""))
-    if low_value:
-        st.sidebar.info("🪙 **Petite valeur** (<$1): " + ", ".join(low_value[:3]) + ("..." if len(low_value) > 3 else ""))
-
 selected_cryptos = st.sidebar.multiselect(
-    "🎯 Sélectionnez les cryptomonnaies:",
+    " Sélectionnez les cryptomonnaies:",
     options=cryptos if cryptos else [],
     default=cryptos[:3] if cryptos else []
 )
 
 # Type de graphique avec nouvelles options multi-sources
 chart_options = [
-    "📊 Graphique unifié (toutes sources)",
-    "🔍 Comparaison par source", 
-    "📈 Graphiques séparés par crypto",
-    "💹 Variations relatives (%)",
-    "⚖️ Écarts entre sources"
+    " Graphique unifié (toutes sources)",
+    " Comparaison par source", 
+    " Graphiques séparés par crypto",
+    " Variations relatives (%)",
+    " Écarts entre sources"
 ]
 
-chart_type = st.sidebar.selectbox("📈 Type d'affichage:", chart_options)
+chart_type = st.sidebar.selectbox(" Type d'affichage:", chart_options)
 
 # Période
-st.sidebar.info(f"📅 Données disponibles du {min_data_date} au {max_data_date}")
+st.sidebar.info(f" Données disponibles du {min_data_date} au {max_data_date}")
 date_range = st.sidebar.date_input(
-    "📅 Période:",
+    " Période:",
     value=(min_data_date, max_data_date),
     min_value=min_data_date,
     max_value=max_data_date
 )
 
 # Indicateurs Clés Multi-Sources
-st.header("📊 Indicateurs Clés Multi-Sources")
+st.header("Indicateurs Clés Multi-Sources")
 
 @st.cache_data(ttl=30)
 def get_multi_source_metrics():
@@ -217,29 +204,29 @@ total_records, unique_cryptos, latest_update, source_metrics = get_multi_source_
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    st.metric("📈 Total Records", f"{total_records:,}")
+    st.metric("Total Records", f"{total_records:,}")
 
 with col2:
-    st.metric("🪙 Cryptos Suivies", unique_cryptos)
+    st.metric("Cryptos Suivies", unique_cryptos)
 
 with col3:
     if latest_update:
         age_seconds = (datetime.now() - latest_update).total_seconds()
         age_text = f"{latest_update.strftime('%H:%M:%S')} ({age_seconds:.0f}s)"
-        st.metric("⏰ Dernière MAJ", age_text)
+        st.metric("Dernière MAJ", age_text)
     else:
-        st.metric("⏰ Dernière MAJ", "N/A")
+        st.metric("Dernière MAJ", "N/A")
 
 with col4:
     if not source_metrics.empty:
         active_sources = len(source_metrics)
-        st.metric("📡 Sources Actives", active_sources)
+        st.metric("Sources Actives", active_sources)
     else:
-        st.metric("📡 Sources Actives", 0)
+        st.metric("Sources Actives", 0)
 
 # Affichage des métriques par source
 if not source_metrics.empty:
-    st.subheader("📊 Répartition par Source")
+    st.subheader("Répartition par Source")
     
     cols = st.columns(len(source_metrics))
     for i, (_, row) in enumerate(source_metrics.iterrows()):
@@ -248,13 +235,13 @@ if not source_metrics.empty:
             records = row['records']
             cryptos = row['cryptos']
             st.metric(
-                f"📊 {source_name}", 
+                f"{source_name}", 
                 f"{records:,} records",
                 f"{cryptos} cryptos"
             )
 
 # Graphiques Multi-Sources
-st.header("📈 Analyse Multi-Sources")
+st.header("Analyse Multi-Sources")
 
 if selected_cryptos and len(date_range) == 2:
     start_date, end_date = date_range
@@ -285,7 +272,7 @@ if selected_cryptos and len(date_range) == 2:
         
         if not price_data.empty:
             # Info sur les données chargées
-            st.sidebar.success(f"📊 Données: {len(price_data)} lignes")
+            st.sidebar.success(f"Données: {len(price_data)} lignes")
             
             # Couleurs personnalisées par source
             source_colors = {
@@ -293,7 +280,7 @@ if selected_cryptos and len(date_range) == 2:
                 'coingecko': '#ff7f0e',      # Orange  
             }
             
-            if chart_type == "📊 Graphique unifié (toutes sources)":
+            if chart_type == "Graphique unifié (toutes sources)":
                 # Créer une colonne combinée crypto+source pour la légende
                 price_data['crypto_source'] = price_data['name'] + ' (' + price_data['source'] + ')'
                 
@@ -308,7 +295,7 @@ if selected_cryptos and len(date_range) == 2:
                 fig.update_layout(height=600)
                 st.plotly_chart(fig, use_container_width=True)
                 
-            elif chart_type == "🔍 Comparaison par source":
+            elif chart_type == "Comparaison par source":
                 fig = px.line(
                     price_data, 
                     x='timestamp', 
@@ -323,7 +310,7 @@ if selected_cryptos and len(date_range) == 2:
                 fig.update_layout(height=400 * ((len(selected_cryptos) + 1) // 2))
                 st.plotly_chart(fig, use_container_width=True)
                 
-            elif chart_type == "📈 Graphiques séparés par crypto":
+            elif chart_type == "Graphiques séparés par crypto":
                 fig = make_subplots(
                     rows=len(selected_cryptos), 
                     cols=1,
@@ -356,7 +343,7 @@ if selected_cryptos and len(date_range) == 2:
                 )
                 st.plotly_chart(fig, use_container_width=True)
                 
-            elif chart_type == "💹 Variations relatives (%)":
+            elif chart_type == "Variations relatives (%)":
                 price_data_pct = price_data.copy()
                 price_data_pct['price_pct'] = price_data_pct.groupby(['name', 'source'])['price'].transform(
                     lambda x: (x / x.iloc[0] - 1) * 100 if len(x) > 0 else 0
@@ -376,7 +363,7 @@ if selected_cryptos and len(date_range) == 2:
                 fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
                 st.plotly_chart(fig, use_container_width=True)
                 
-            elif chart_type == "⚖️ Écarts entre sources":
+            elif chart_type == "Écarts entre sources":
                 if len(price_data['source'].unique()) >= 2:
                     # Calculer les écarts de prix entre sources pour chaque crypto
                     st.subheader("🔍 Analyse des Écarts entre Sources")
@@ -428,27 +415,27 @@ if selected_cryptos and len(date_range) == 2:
                                     # Statistiques des écarts
                                     avg_ecart = pivot_data['ecart_abs'].mean()
                                     max_ecart = pivot_data['ecart_abs'].abs().max()
-                                    st.metric(f"📊 {crypto} - Écart moyen", f"${avg_ecart:.2f}", f"Max: ${max_ecart:.2f}")
+                                    st.metric(f"{crypto} - Écart moyen", f"${avg_ecart:.2f}", f"Max: ${max_ecart:.2f}")
                         else:
-                            st.info(f"🔍 {crypto}: Une seule source disponible, pas d'écart calculable")
+                            st.info(f"{crypto}: Une seule source disponible, pas d'écart calculable")
                 else:
-                    st.warning("⚖️ Au moins 2 sources nécessaires pour calculer les écarts")
+                    st.warning("Au moins 2 sources nécessaires pour calculer les écarts")
             
         else:
-            st.warning("🔍 Aucune donnée disponible pour la sélection actuelle.")
-            st.info(f"📅 Période: {start_date} à {end_date}")
-            st.info(f"🎯 Cryptos: {', '.join(selected_cryptos)}")
-            st.info(f"📡 Sources: {', '.join(selected_sources)}")
+            st.warning("Aucune donnée disponible pour la sélection actuelle.")
+            st.info(f"Période: {start_date} à {end_date}")
+            st.info(f"Cryptos: {', '.join(selected_cryptos)}")
+            st.info(f"Sources: {', '.join(selected_sources)}")
             
     except Exception as e:
         st.error(f"💥 Erreur lors de la récupération des données: {e}")
-        with st.expander("🔍 Détails de la requête"):
+        with st.expander("Détails de la requête"):
             st.code(query)
 else:
-    st.info("🎯 Veuillez sélectionner au moins une cryptomonnaie et une période valide.")
+    st.info("Veuillez sélectionner au moins une cryptomonnaie et une période valide.")
 
 # Tableau des données récentes multi-sources
-st.header("📋 Données Récentes Multi-Sources")
+st.header("Données Récentes Multi-Sources")
 try:
     conn = get_connection()
     recent_data = conn.execute("""

@@ -1,6 +1,3 @@
-"""
-Page ML Predictions - Prédictions de prix basées sur machine learning
-"""
 import streamlit as st
 import sys
 import os
@@ -16,10 +13,10 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.database import get_crypto_data, get_available_cryptos
 
 # Configuration de la page
-st.set_page_config(page_title="ML Predictions - CryptoViz", layout="wide")
+st.set_page_config(page_title=" ML Predictions - CryptoViz", layout="wide")
 
-st.title("ML Predictions - Prédictions de Prix Crypto")
-st.markdown("*Analyse prédictive basée sur machine learning*")
+st.title(" ML Predictions - Prédictions de Prix Crypto")
+st.markdown("*🔮 Analyse prédictive basée sur machine learning temps réel*")
 
 # ===== SESSION STATE =====
 if 'selected_crypto' not in st.session_state:
@@ -106,22 +103,22 @@ def get_available_cryptos_cached():
 
 available_cryptos = get_available_cryptos_cached()
 if available_cryptos.empty:
-    st.error("Aucune donnée crypto disponible")
+    st.error("❌ Aucune donnée crypto disponible")
     st.stop()
 
 crypto_list = available_cryptos['name'].tolist()
 
 # ===== SIDEBAR =====
-st.sidebar.header("📊 Configuration ML")
+st.sidebar.header(" Configuration ML")
 
 # Debug permanent
 st.sidebar.markdown("### 🔍 État Actuel")
-st.sidebar.write(f"**Session State:** `{st.session_state.selected_crypto}`")
-st.sidebar.write(f"**Cryptos disponibles:** {len(crypto_list)}")
+st.sidebar.write(f"** Sélection:** `{st.session_state.selected_crypto}`")
+st.sidebar.write(f"**💰 Cryptos disponibles:** {len(crypto_list)}")
 
 # ===== SÉLECTION CRYPTO =====
-st.sidebar.markdown("### 🎯 Sélection Crypto")
-st.sidebar.markdown("**Cliquez sur une crypto :**")
+st.sidebar.markdown("### 💰 Sélection Crypto")
+st.sidebar.markdown("** Cliquez sur une crypto :**")
 
 # Créer des colonnes pour organiser les boutons
 crypto_cols = st.sidebar.columns(2)
@@ -145,341 +142,308 @@ for i, crypto in enumerate(crypto_list[:10]):  # Limiter à 10 pour l'affichage
             st.rerun()
 
 # Afficher la sélection actuelle
-st.sidebar.success(f"🎯 **Sélectionné:** {st.session_state.selected_crypto}")
+st.sidebar.success(f" **Analysé:** {st.session_state.selected_crypto}")
 
 # ===== PARAMÈTRES DE CONFIGURATION =====
-st.sidebar.markdown("### ⚙️ Paramètres")
+st.sidebar.markdown("### ⚙️ Paramètres ML")
 
 # Utiliser des clés fixes pour éviter les conflicts
-hours_history = st.sidebar.slider(
-    "Historique (heures)", 
-    6, 72, 24, 
-    key="hours_history_slider"
+hours_back = st.sidebar.slider(
+    " Historique (heures)", 
+    min_value=6, 
+    max_value=168, 
+    value=24, 
+    step=6,
+    key="hours_back_slider"
 )
 
-hours_prediction = st.sidebar.slider(
-    "Prédiction (heures)", 
-    1, 24, 4,
-    key="hours_prediction_slider"
+hours_ahead = st.sidebar.slider(
+    " Horizon prédiction (heures)", 
+    min_value=1, 
+    max_value=48, 
+    value=4, 
+    step=1,
+    key="hours_ahead_slider"
 )
 
-source_selected = st.sidebar.selectbox(
-    "Source données",
-    ["Toutes", "coinmarketcap", "coingecko"],
-    key="source_selectbox"
+st.sidebar.markdown("###  Paramètres Avancés")
+
+window_short = st.sidebar.number_input(
+    " MA Court Terme", 
+    min_value=5, 
+    max_value=50, 
+    value=20, 
+    step=5,
+    key="window_short_input"
 )
 
-# Paramètres ML
-st.sidebar.markdown("### 🤖 Modèles ML")
-ma_short_window = st.sidebar.slider("MA Courte", 5, 30, 20, key="ma_short_slider")
-ma_long_window = st.sidebar.slider("MA Longue", 20, 100, 50, key="ma_long_slider") 
-momentum_window = st.sidebar.slider("Momentum", 5, 30, 14, key="momentum_slider")
-
-# ===== MODE D'ANALYSE =====
-st.sidebar.markdown("### 🔄 Mode d'Analyse")
-
-mode_continu = st.sidebar.checkbox(
-    "🔄 Mode Continu", 
-    value=False,
-    help="Analyse automatique à chaque changement de paramètre",
-    key="mode_continu_checkbox"
+window_long = st.sidebar.number_input(
+    " MA Long Terme", 
+    min_value=20, 
+    max_value=200, 
+    value=50, 
+    step=10,
+    key="window_long_input"
 )
 
-if mode_continu:
-    st.sidebar.success("✅ Mode continu activé")
-    st.sidebar.caption("L'analyse se lance automatiquement")
-else:
-    # Bouton d'analyse manuel
-    analyze_button = st.sidebar.button(
-        "🚀 ANALYSER", 
-        type="primary", 
-        use_container_width=True,
-        key="analyze_main_button"
-    )
-    st.sidebar.caption("Cliquez pour analyser")
+momentum_window = st.sidebar.number_input(
+    " Fenêtre Momentum", 
+    min_value=7, 
+    max_value=30, 
+    value=14, 
+    step=1,
+    key="momentum_window_input"
+)
 
-# ===== DÉTECTION DES CHANGEMENTS POUR MODE CONTINU =====
+# Paramètres actuels pour tracking
 current_params = {
     'crypto': st.session_state.selected_crypto,
-    'hours_history': hours_history,
-    'hours_prediction': hours_prediction,
-    'source': source_selected,
-    'ma_short': ma_short_window,
-    'ma_long': ma_long_window,
-    'momentum': momentum_window
+    'hours_back': hours_back,
+    'hours_ahead': hours_ahead,
+    'window_short': window_short,
+    'window_long': window_long,
+    'momentum_window': momentum_window
 }
 
-# Vérifier si on doit lancer l'analyse
-should_analyze = False
+# ===== BOUTONS DE CONTRÔLE =====
+st.sidebar.markdown("---")
+st.sidebar.markdown("###  Actions")
 
-if mode_continu:
-    # En mode continu, analyser si les paramètres ont changé
-    if params_changed(current_params) or st.session_state.force_refresh:
-        should_analyze = True
-        st.session_state.last_params = current_params.copy()
-else:
-    # En mode manuel, analyser seulement sur clic du bouton
-    if 'analyze_button' in locals() and analyze_button:
-        should_analyze = True
-    elif st.session_state.force_refresh:
-        should_analyze = True
-
-# ===== INTERFACE PRINCIPALE =====
-current_crypto = st.session_state.selected_crypto
-
-st.header(f"🎯 Analyse ML : {current_crypto}")
-
-# Métriques de configuration
-col1, col2, col3, col4 = st.columns(4)
+col1, col2 = st.sidebar.columns(2)
 with col1:
-    st.metric("Crypto Active", current_crypto)
+    if st.button(" Actualiser", type="secondary", use_container_width=True):
+        st.session_state.force_refresh = True
+        st.cache_data.clear()
+        st.rerun()
+
 with col2:
-    st.metric("Historique", f"{hours_history}h")
-with col3:
-    st.metric("Prédiction", f"{hours_prediction}h") 
-with col4:
-    mode_display = "🔄 Continu" if mode_continu else "🔘 Manuel"
-    st.metric("Mode", mode_display)
-
-# ===== LOGIQUE D'ANALYSE =====
-if should_analyze:
-    # Reset du flag de refresh
-    if st.session_state.force_refresh:
-        st.session_state.force_refresh = False
-    
-    if mode_continu:
-        st.info(f"🔄 Analyse continue pour **{current_crypto}**...")
-    else:
-        st.info(f"🚀 Analyse ML en cours pour **{current_crypto}**...")
-    
-    # Récupération des données
-    source_filter = None if source_selected == "Toutes" else source_selected
-    
-    try:
-        with st.spinner("Récupération des données..."):
-            data = get_crypto_data(current_crypto, hours_history, source_filter)
-            
-        if data.empty:
-            st.error(f"❌ Pas de données pour **{current_crypto}** sur {hours_history}h")
-            st.info("💡 Essayez une autre crypto ou réduisez la période d'historique")
-            
-        else:
-            # Traitement des données
-            data = data.sort_values('timestamp').reset_index(drop=True)
-            
-            with st.spinner("Calculs ML..."):
-                # Calculs ML
-                data_with_ma = calculate_moving_averages(data, ma_short_window, ma_long_window)
-                data_with_trend, trend_slope = calculate_trend(data_with_ma)
-                data_final = calculate_momentum(data_with_trend, momentum_window)
-                
-                # Prédictions
-                predictions = predict_price(data_final, hours_prediction)
-                confidence_metrics = calculate_confidence_metrics(data_final, predictions)
-                
-                # Stocker les résultats
-                st.session_state.analysis_results = {
-                    'data': data_final,
-                    'predictions': predictions,
-                    'confidence': confidence_metrics,
-                    'trend_slope': trend_slope,
-                    'crypto': current_crypto,
-                    'params': current_params.copy(),
-                    'timestamp': datetime.now()
-                }
-            
-            if mode_continu:
-                st.success(f"🔄 Analyse continue mise à jour pour **{current_crypto}**")
-            else:
-                st.success(f"✅ Analyse terminée pour **{current_crypto}**")
-            
-    except Exception as e:
-        st.error(f"❌ Erreur lors de l'analyse: {str(e)}")
+    if st.button(" Analyser", type="primary", use_container_width=True):
+        st.session_state.force_refresh = True
         st.session_state.analysis_results = None
+        st.rerun()
 
-# ===== AFFICHAGE DES RÉSULTATS =====
-if st.session_state.analysis_results:
-    results = st.session_state.analysis_results
-    data_final = results['data']
-    predictions = results['predictions']
-    confidence_metrics = results['confidence']
-    trend_slope = results['trend_slope']
+# Vérifier si on doit recalculer
+if (st.session_state.analysis_results is None or 
+    params_changed(current_params) or 
+    st.session_state.force_refresh):
     
-    # Afficher l'horodatage de l'analyse
-    if 'timestamp' in results:
-        analysis_time = results['timestamp'].strftime("%H:%M:%S")
-        st.caption(f"📊 Dernière analyse: {analysis_time}")
-    
-    # Métriques actuelles
-    st.subheader("📊 Métriques de Prix")
-    col1, col2, col3, col4 = st.columns(4)
-    
-    current_price = data_final['price'].iloc[-1]
-    price_change = ((current_price - data_final['price'].iloc[0]) / data_final['price'].iloc[0]) * 100
-    volatility = (data_final['price'].std() / data_final['price'].mean()) * 100
-    
-    with col1:
-        st.metric("Prix Actuel", f"${current_price:.4f}")
-    with col2:
-        st.metric("Variation", f"{price_change:+.2f}%")
-    with col3:
-        st.metric("Volatilité", f"{volatility:.2f}%")
-    with col4:
-        st.metric("Points", len(data_final))
-    
-    # Graphique et prédictions
-    st.subheader("📈 Graphique & Prédictions")
-    
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        # Graphique
-        fig = go.Figure()
+    with st.spinner(' Calcul des prédictions ML...'):
+        # Récupérer les données
+        data = get_crypto_data(st.session_state.selected_crypto, hours_back)
         
-        # Prix réel
-        fig.add_trace(go.Scatter(
-            x=data_final['timestamp'],
-            y=data_final['price'],
-            mode='lines',
-            name='Prix réel',
-            line=dict(color='blue', width=2)
-        ))
+        if data.empty:
+            st.error(f"❌ Aucune donnée disponible pour {st.session_state.selected_crypto}")
+            st.stop()
+        # Configurer timestamp comme index pour les calculs temporels
+        data = data.set_index(pd.to_datetime(data['timestamp']))
+        data = data.drop(columns=['timestamp'], errors='ignore')
+
         
-        # Moyennes mobiles
-        fig.add_trace(go.Scatter(
-            x=data_final['timestamp'],
-            y=data_final['ma_short'],
-            mode='lines',
-            name=f'MA {ma_short_window}',
-            line=dict(color='orange', width=1)
-        ))
-        
-        fig.add_trace(go.Scatter(
-            x=data_final['timestamp'],
-            y=data_final['ma_long'],
-            mode='lines',
-            name=f'MA {ma_long_window}',
-            line=dict(color='red', width=1)
-        ))
-        
-        # Tendance
-        fig.add_trace(go.Scatter(
-            x=data_final['timestamp'],
-            y=data_final['trend'],
-            mode='lines',
-            name='Tendance',
-            line=dict(color='green', width=1, dash='dash')
-        ))
+        # Calculs ML
+        data = calculate_moving_averages(data, window_short, window_long)
+        data, trend_slope = calculate_trend(data)
+        data = calculate_momentum(data, momentum_window)
         
         # Prédictions
-        future_time = data_final['timestamp'].iloc[-1] + timedelta(hours=hours_prediction)
+        predictions = predict_price(data, hours_ahead)
+        confidence_metrics = calculate_confidence_metrics(data, predictions)
         
-        # Points de prédiction
-        for model, pred_price in predictions.items():
-            if model != 'consensus':
-                fig.add_trace(go.Scatter(
-                    x=[future_time],
-                    y=[pred_price],
-                    mode='markers',
-                    name=f'Pred {model}',
-                    marker=dict(size=8)
-                ))
-        
-        # Consensus
-        fig.add_trace(go.Scatter(
-            x=[future_time],
-            y=[predictions['consensus']],
-            mode='markers',
-            name='CONSENSUS',
-            marker=dict(size=12, color='black', symbol='star')
-        ))
-        
-        fig.update_layout(
-            title=f'Analyse ML - {current_crypto} {"(Mode Continu)" if mode_continu else ""}',
-            xaxis_title='Temps',
-            yaxis_title='Prix ($)',
-            height=500
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
-    
-    with col2:
-        # Tableau des résultats
-        st.markdown("#### 📋 Prédictions")
-        
-        results_data = []
-        for model, pred_price in predictions.items():
-            change_pct = ((pred_price - current_price) / current_price) * 100
-            confidence = confidence_metrics[model]
-            
-            model_names = {
-                'ma_short': f'MA {ma_short_window}',
-                'ma_long': f'MA {ma_long_window}', 
-                'trend': 'Tendance',
-                'momentum': 'Momentum',
-                'consensus': '⭐ CONSENSUS'
-            }
-            
-            results_data.append({
-                'Modèle': model_names.get(model, model),
-                'Prix': f"${pred_price:.4f}",
-                'Var.': f"{change_pct:+.2f}%",
-                'Conf.': f"{confidence:.0f}%"
-            })
-        
-        results_df = pd.DataFrame(results_data)
-        st.dataframe(results_df, hide_index=True, use_container_width=True)
-        
-        # Indicateur de mode
-        if mode_continu:
-            st.info("🔄 **Mode Continu**\nMise à jour automatique")
-    
-    # Signal de trading
-    st.subheader("🎯 Signal de Trading")
-    
-    consensus_change = ((predictions['consensus'] - current_price) / current_price) * 100
-    avg_confidence = np.mean(list(confidence_metrics.values()))
-    
-    if consensus_change > 2 and avg_confidence > 60:
-        signal = "🟢 ACHAT"
-    elif consensus_change < -2 and avg_confidence > 60:
-        signal = "🔴 VENTE"
-    else:
-        signal = "🟡 HOLD"
-    
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Recommandation", signal)
-    with col2:
-        st.metric("Variation Consensus", f"{consensus_change:+.2f}%")
-    with col3:
-        st.metric("Confiance", f"{avg_confidence:.1f}%")
+        # Stocker les résultats
+        st.session_state.analysis_results = {
+            'data': data,
+            'predictions': predictions,
+            'confidence': confidence_metrics,
+            'trend_slope': trend_slope
+        }
+        st.session_state.last_params = current_params.copy()
+        st.session_state.force_refresh = False
 
+# Récupérer les résultats
+results = st.session_state.analysis_results
+if not results:
+    st.error("❌ Erreur de calcul ML")
+    st.stop()
+
+data = results['data']
+predictions = results['predictions']
+confidence_metrics = results['confidence']
+trend_slope = results['trend_slope']
+
+# ===== AFFICHAGE PRINCIPAL =====
+
+# Métriques principales
+st.header(" Métriques ML Temps Réel")
+col1, col2, col3, col4 = st.columns(4)
+
+current_price = data['price'].iloc[-1]
+consensus_prediction = predictions['consensus']
+price_change = ((consensus_prediction - current_price) / current_price) * 100
+consensus_confidence = confidence_metrics['consensus']
+
+with col1:
+    st.metric("💰 Prix Actuel", f"${current_price:,.2f}")
+
+with col2:
+    st.metric("🔮 Prédiction Consensus", f"${consensus_prediction:,.2f}", f"{price_change:+.2f}%")
+
+with col3:
+    confidence_icon = "🟢" if consensus_confidence > 70 else "🟡" if consensus_confidence > 50 else "🔴"
+    st.metric(f"{confidence_icon} Confiance", f"{consensus_confidence:.1f}%")
+
+with col4:
+    trend_icon = "📈" if trend_slope > 0 else "📉"
+    trend_text = "Haussière" if trend_slope > 0 else "Baissière"
+    st.metric(f"{trend_icon} Tendance", trend_text)
+
+# Signal Trading
+st.header(" Signal Trading")
+col1, col2, col3 = st.columns(3)
+
+# Déterminer le signal
+if price_change > 2 and consensus_confidence > 60:
+    signal = "🟢 ACHAT"
+    signal_color = "success"
+elif price_change < -2 and consensus_confidence > 60:
+    signal = "🔴 VENTE"
+    signal_color = "error"
 else:
-    # Pas d'analyse
-    if mode_continu:
-        st.info(f"""
-        **Mode Continu Activé pour {current_crypto}**
-        
-        🔄 **L'analyse se met à jour automatiquement** quand vous :
-        - Changez de cryptomonnaie
-        - Modifiez les paramètres (historique, prédiction, etc.)
-        - Ajustez les modèles ML
-        
-        💡 **{len(crypto_list)} cryptomonnaies disponibles dans la sidebar**
-        """)
+    signal = "🟡 HOLD"
+    signal_color = "warning"
+
+with col2:
+    if signal_color == "success":
+        st.success(f"### {signal}")
+    elif signal_color == "error":
+        st.error(f"### {signal}")
     else:
-        st.info(f"""
-        **Prêt pour l'analyse de {current_crypto}**
-        
-        📝 **Étapes:**
-        1. Sélectionnez une crypto avec les boutons dans la sidebar ⬅️
-        2. Ajustez les paramètres si nécessaire
-        3. Cliquez sur **"🚀 ANALYSER"**
-        
-        💡 **Astuce:** Activez le **"Mode Continu"** pour une mise à jour automatique !
-        """)
+        st.warning(f"### {signal}")
 
-# Avertissement
-st.warning("⚠️ **Disclaimer:** Prédictions à des fins éducatives uniquement. Ne pas utiliser pour des décisions d'investissement.")
+# Tableau des prédictions détaillées
+st.header(" Prédictions par Modèle")
 
+models_data = []
+model_names = {
+    'ma_short': f'⚡ MA Court ({window_short})',
+    'ma_long': f' MA Long ({window_long})',
+    'trend': ' Tendance Linéaire',
+    'momentum': f' Momentum ({momentum_window})',
+    'consensus': ' Consensus Pondéré'
+}
+
+for model, prediction in predictions.items():
+    change = ((prediction - current_price) / current_price) * 100
+    confidence = confidence_metrics[model]
+    
+    # Icône basée sur la confiance
+    if confidence > 70:
+        conf_icon = "🟢"
+    elif confidence > 50:
+        conf_icon = "🟡"
+    else:
+        conf_icon = "🔴"
+    
+    # Icône direction
+    direction_icon = "📈" if change > 0 else "📉"
+    
+    models_data.append({
+        'Modèle': model_names.get(model, model),
+        'Prix Prédit': f"${prediction:,.2f}",
+        'Variation': f"{direction_icon} {change:+.2f}%",
+        'Confiance': f"{conf_icon} {confidence:.1f}%"
+    })
+
+models_df = pd.DataFrame(models_data)
+st.dataframe(models_df, use_container_width=True, hide_index=True)
+
+# Graphique principal
+st.header(" Analyse Technique + Prédictions")
+
+fig = go.Figure()
+
+# Prix historique
+fig.add_trace(go.Scatter(
+    x=data.index,
+    y=data['price'],
+    mode='lines',
+    name='💰 Prix Historique',
+    line=dict(color='blue', width=2)
+))
+
+# Moyennes mobiles
+fig.add_trace(go.Scatter(
+    x=data.index,
+    y=data['ma_short'],
+    mode='lines',
+    name=f'⚡ MA {window_short}',
+    line=dict(color='orange', width=1)
+))
+
+fig.add_trace(go.Scatter(
+    x=data.index,
+    y=data['ma_long'],
+    mode='lines',
+    name=f'📈 MA {window_long}',
+    line=dict(color='red', width=1)
+))
+
+# Tendance
+fig.add_trace(go.Scatter(
+    x=data.index,
+    y=data['trend'],
+    mode='lines',
+    name=' Tendance',
+    line=dict(color='green', width=1, dash='dash')
+))
+
+# Point de prédiction consensus
+future_time = data.index[-1] + pd.Timedelta(hours=hours_ahead)
+fig.add_trace(go.Scatter(
+    x=[future_time],
+    y=[consensus_prediction],
+    mode='markers',
+    name=' Prédiction Consensus',
+    marker=dict(color='red', size=15, symbol='star')
+))
+
+fig.update_layout(
+    title=f" Analyse ML - {st.session_state.selected_crypto}",
+    xaxis_title=" Temps",
+    yaxis_title="💰 Prix ($)",
+    height=600,
+    hovermode='x unified'
+)
+
+st.plotly_chart(fig, use_container_width=True)
+
+# Métriques de performance
+st.header(" Métriques Performance")
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.subheader("📈 Volatilité")
+    volatility = data['price'].tail(20).std()
+    vol_pct = (volatility / current_price) * 100
+    vol_icon = "🟢" if vol_pct < 5 else "🟡" if vol_pct < 10 else "🔴"
+    st.metric(f"{vol_icon} Volatilité 20P", f"{vol_pct:.2f}%")
+
+with col2:
+    st.subheader(" Momentum")
+    last_momentum = data['momentum'].dropna().iloc[-1] if not data['momentum'].dropna().empty else 0
+    momentum_pct = (last_momentum / current_price) * 100
+    mom_icon = "📈" if momentum_pct > 0 else "📉"
+    st.metric(f"{mom_icon} Momentum {momentum_window}P", f"{momentum_pct:+.2f}%")
+
+with col3:
+    st.subheader(" Points de Données")
+    data_quality_icon = "🟢" if len(data) > 50 else "🟡" if len(data) > 20 else "🔴"
+    st.metric(f"{data_quality_icon} Qualité Données", f"{len(data)} points")
+
+# Auto-refresh
+st.sidebar.markdown("---")
+st.sidebar.markdown("###  Actualisation")
+if st.sidebar.button(" Actualiser ML", use_container_width=True):
+    st.cache_data.clear()
+    st.session_state.force_refresh = True
+    st.rerun()
+
+st.sidebar.info(" *ML recalculé automatiquement sur nouvelles données streaming*")

@@ -20,7 +20,7 @@ def inject_streaming_javascript():
     """Injection du JavaScript pour le streaming SSE"""
     js_code = """
     <script>
-    console.log("🚀 Initialisation streaming CryptoViz...");
+    console.log(" Initialisation streaming CryptoViz...");
     
     let eventSource = null;
     let reconnectAttempts = 0;
@@ -42,14 +42,14 @@ def inject_streaming_javascript():
             eventSource.onmessage = function(event) {
                 try {
                     const data = JSON.parse(event.data);
-                    console.log("📡 Message reçu:", data.type);
+                    console.log(" Message reçu:", data.type);
                     
                     if (data.type === 'welcome') {
-                        console.log("👋 Bienvenue:", data.message);
+                        console.log(" Bienvenue:", data.message);
                         updateStreamingStatus(`🟢 Connecté - ${data.client_id}`, "success");
                         
                     } else if (data.type === 'crypto_update') {
-                        console.log("💰 Nouvelle crypto:", data.data.name, "$" + data.data.price.toFixed(2));
+                        console.log(" Nouvelle crypto:", data.data.name, "$" + data.data.price.toFixed(2));
                         
                         // Stocker la donnée
                         latestData.push({
@@ -69,7 +69,7 @@ def inject_streaming_javascript():
                         
                         // Déclencher refresh Streamlit après quelques données
                         if (latestData.length % 5 === 0) {
-                            console.log("🔄 Déclenchement refresh dashboard...");
+                            console.log(" Déclenchement refresh dashboard...");
                             setTimeout(() => {
                                 // Poster un message à Streamlit
                                 window.parent.postMessage({
@@ -102,7 +102,7 @@ def inject_streaming_javascript():
                 if (reconnectAttempts < maxReconnectAttempts) {
                     reconnectAttempts++;
                     const delay = 3000 * reconnectAttempts;
-                    console.log(`🔄 Reconnexion dans ${delay}ms (${reconnectAttempts}/${maxReconnectAttempts})`);
+                    console.log(` Reconnexion dans ${delay}ms (${reconnectAttempts}/${maxReconnectAttempts})`);
                     updateStreamingStatus(`🟡 Reconnexion ${reconnectAttempts}/${maxReconnectAttempts}...`, "warning");
                     setTimeout(connectToStream, delay);
                 } else {
@@ -156,7 +156,7 @@ def inject_streaming_javascript():
     function startPeriodicRefresh() {
         setInterval(() => {
             if (!isConnected) {
-                console.log("📡 Pas de streaming - refresh périodique");
+                console.log(" Pas de streaming - refresh périodique");
                 window.location.reload();
             }
         }, 30000); // Toutes les 30 secondes si pas de streaming
@@ -283,10 +283,10 @@ inject_streaming_javascript()
 col_title, col_status = st.columns([3, 1])
 
 with col_title:
-    st.title("📊 CryptoViz - Dashboard Streaming Temps Réel")
+    st.title(" CryptoViz - Dashboard Streaming Temps Réel")
 
 with col_status:
-    st.markdown('<div id="streaming-status" class="streaming-status">🔄 Connexion...</div>', unsafe_allow_html=True)
+    st.markdown('<div id="streaming-status" class="streaming-status"> Connexion...</div>', unsafe_allow_html=True)
 
 def get_connection():
     """Connexion DuckDB"""
@@ -380,24 +380,24 @@ def get_streaming_metrics():
         return {}
 
 # Sidebar avec contrôles streaming
-st.sidebar.header("🎛️ Contrôles Streaming")
+st.sidebar.header(" Contrôles Streaming")
 
 # Status streaming dans sidebar
 st.sidebar.markdown('<div id="sidebar-streaming-status" class="sidebar-status">Connexion...</div>', unsafe_allow_html=True)
 
 # Contrôles
-auto_refresh = st.sidebar.checkbox("🔄 Auto-refresh", value=True)
+auto_refresh = st.sidebar.checkbox(" Auto-refresh", value=True)
 refresh_interval = st.sidebar.selectbox("Intervalle:", [2, 5, 10, 15], index=0)
 
 if st.sidebar.button("🔄 Refresh Manuel"):
     st.cache_data.clear()
     st.rerun()
 
-if st.sidebar.button("🔗 Reconnecter Stream"):
+if st.sidebar.button(" Reconnecter Stream"):
     st.markdown('<script>window.cryptoVizStreaming.reconnect();</script>', unsafe_allow_html=True)
 
 # Métriques temps réel
-st.header("📊 Métriques Temps Réel")
+st.header(" Métriques Temps Réel")
 
 metrics = get_streaming_metrics()
 
@@ -433,7 +433,7 @@ if metrics:
         st.metric("📡 Sources", sources_text[:20] + "...")
 
 # Données temps réel
-st.header("⚡ Données Temps Réel (Dernières 10 min)")
+st.header(" Données Temps Réel (Dernières 10 min)")
 
 latest_data = get_latest_data()
 
@@ -461,7 +461,7 @@ if not latest_data.empty:
     
     # Graphique temps réel
     if len(latest_data) > 1:
-        st.subheader("📈 Évolution Temps Réel")
+        st.subheader(" Évolution Temps Réel")
         
         fig = px.scatter(
             latest_data, 
@@ -483,14 +483,14 @@ if not latest_data.empty:
         st.plotly_chart(fig, use_container_width=True)
 
 else:
-    st.info("📡 En attente des premières données streaming...")
+    st.info(" En attente des premières données streaming...")
     st.markdown("Le système collecte les données toutes les 2 minutes. Patientez quelques instants.")
 
 # Graphiques historiques (cache plus long)
 cryptos_data = get_cryptos_with_prices()
 
 if not cryptos_data.empty:
-    st.header("📊 Vue d'Ensemble")
+    st.header(" Vue d'Ensemble")
     
     # Sélection des cryptos
     selected_cryptos = st.multiselect(
@@ -545,7 +545,7 @@ if auto_refresh:
     """, unsafe_allow_html=True)
 
 # Debug info
-with st.expander("🔧 Debug Streaming"):
+with st.expander(" Debug Streaming"):
     st.markdown("""
     **Status Streaming:**
     - Les données arrivent toutes les 2 minutes

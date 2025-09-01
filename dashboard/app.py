@@ -16,7 +16,7 @@ st.title("CryptoViz - Dashboard Multi-Sources & ML Predictions")
 st.markdown("*Plateforme d'analyse crypto avec prédictions ML temps réel*")
 
 # Vérifier la connexion à la base de données
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=10)
 def get_system_status():
     try:
         conn = get_connection()

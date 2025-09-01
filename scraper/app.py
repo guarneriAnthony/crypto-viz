@@ -1,175 +1,179 @@
-"""
-Scraper unifié multi-sources pour données crypto
-Supporte CoinMarketCap et CoinGecko
-"""
 import time
 import redis
+import requests
 import json
 import os
-from typing import List
-from providers import CoinMarketCapProvider, CoinGeckoProvider
 
-class UnifiedCryptoScraper:
+redis_client = redis.Redis(host="redis", port=6379, db=0)
+QUEUE_NAME = "crypto_data"
+PUBSUB_CHANNEL = "crypto_updates"
+API_KEY = os.getenv("COINMARKETCAP_API_KEY", "your-api-key-here")
+BASE_URL = "https://pro-api.coinmarketcap.com/v1/cryptocurrency"
+
+def get_crypto_data():
     """
-    Orchestrateur principal qui gère plusieurs sources de données crypto
+    Récupère les données crypto avec debug détaillé
     """
-    
-    def __init__(self):
-        self.redis_client = redis.Redis(host="redis", port=6379, db=0)
-        self.queue_name = "crypto_data"
-        self.scraping_interval = 300  # 5 minutes
+    try:
+        url = f"{BASE_URL}/listings/latest"
         
-        # Initialiser les providers
-        self.providers = []
+        headers = {
+            'Accepts': 'application/json',
+            'X-CMC_PRO_API_KEY': API_KEY,
+        }
         
-        # Toujours activer CoinMarketCap si API key disponible
-        cmc_api_key = os.getenv("COINMARKETCAP_API_KEY", "")
-        if cmc_api_key and cmc_api_key != "your-api-key-here":
-            self.providers.append(CoinMarketCapProvider())
-            print("✅ CoinMarketCap provider activé", flush=True)
-        else:
-            print("⚠️ CoinMarketCap désactivé (pas d'API key)", flush=True)
+        parameters = {
+            'start': '1',
+            'limit': '5',  # Réduire à 5 pour debug
+            'convert': 'USD'
+        }
         
-        # Toujours activer CoinGecko (API gratuite)
-        self.providers.append(CoinGeckoProvider())
-        print("✅ CoinGecko provider activé", flush=True)
+        print(f"🔗 URL: {url}", flush=True)
+        print(f"🔑 API Key: {API_KEY[:8]}...{API_KEY[-8:]}", flush=True)
+        print(f"📋 Params: {parameters}", flush=True)
         
-        if not self.providers:
-            raise Exception("❌ Aucun provider configuré !")
+        response = requests.get(url, headers=headers, params=parameters)
+        
+        print(f"📊 Status HTTP: {response.status_code}", flush=True)
+        print(f"📊 Headers: {dict(response.headers)}", flush=True)
+        
+        if response.status_code != 200:
+            print(f"❌ Erreur HTTP: {response.text}", flush=True)
+            return []
+        
+        data = response.json()
+        print(f"📊 Réponse JSON clés: {list(data.keys())}", flush=True)
+        
+        if 'status' in data:
+            status = data['status']
+            print(f"📊 API Status: {status.get('error_code', 'unknown')}", flush=True)
+            if status.get('error_message'):
+                print(f"❌ API Error: {status['error_message']}", flush=True)
+                return []
+        
+        if 'data' not in data:
+            print(f"❌ Pas de 'data' dans la réponse: {data}", flush=True)
+            return []
             
-        print(f"🚀 {len(self.providers)} provider(s) configuré(s)", flush=True)
-    
-    def scrape_from_provider(self, provider) -> int:
-        """
-        Scrape les données d'un provider spécifique
+        crypto_data = data.get('data', [])
+        print(f"📊 Nombre de cryptos reçues: {len(crypto_data)}", flush=True)
         
-        Args:
-            provider: Instance du provider à utiliser
-            
-        Returns:
-            int: Nombre d'enregistrements traités
-        """
+        if not crypto_data:
+            print(f"❌ Liste vide reçue de l'API", flush=True)
+            return []
+        
+        # Debug première crypto
+        if crypto_data:
+            first_crypto = crypto_data[0]
+            print(f"🔍 Première crypto clés: {list(first_crypto.keys())}", flush=True)
+            print(f"🔍 Name: {first_crypto.get('name')}", flush=True)
+            print(f"🔍 Quote keys: {list(first_crypto.get('quote', {}).keys())}", flush=True)
+        
+        crypto_list = []
+        for crypto in crypto_data:
+            try:
+                quote_usd = crypto.get('quote', {}).get('USD', {})
+                crypto_item = {
+                    'name': crypto.get('name', ''),
+                    'symbol': crypto.get('symbol', ''),
+                    'price': quote_usd.get('price', 0),
+                    'percent_change_24h': quote_usd.get('percent_change_24h', 0),
+                    'market_cap': quote_usd.get('market_cap', 0),
+                    'source': 'coinmarketcap',
+                    'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
+                }
+                
+                crypto_list.append(crypto_item)
+                print(f"✅ Traité: {crypto_item['name']} - ${crypto_item['price']:.2f}", flush=True)
+                
+            except Exception as e:
+                print(f"❌ Erreur traitement crypto: {e}", flush=True)
+                continue
+
+        print(f"✅ {len(crypto_list)} cryptos traitées avec succès", flush=True)
+        return crypto_list
+
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Erreur réseau: {e}", flush=True)
+        return []
+    except json.JSONDecodeError as e:
+        print(f"❌ Erreur JSON: {e}", flush=True)
+        print(f"❌ Réponse brute: {response.text[:500]}", flush=True)
+        return []
+    except Exception as e:
+        print(f"❌ Erreur générale: {e}", flush=True)
+        return []
+
+def publish_dual(crypto_data):
+    """Publication duale avec debug"""
+    if not crypto_data:
+        print("⚠️ Aucune donnée à publier", flush=True)
+        return
+    
+    print(f"📡 Publication de {len(crypto_data)} éléments...", flush=True)
+    
+    queue_success = 0
+    pubsub_success = 0
+    
+    for item in crypto_data:
+        json_data = json.dumps(item)
+        
         try:
-            crypto_data = provider.get_crypto_data()
+            # Queue
+            redis_client.lpush(QUEUE_NAME, json_data)
+            queue_success += 1
             
-            if not crypto_data:
-                print(f"⚠️ Aucune donnée reçue de {provider.name}", flush=True)
-                return 0
+            # Pub/Sub
+            subscribers = redis_client.publish(PUBSUB_CHANNEL, json_data)
+            pubsub_success += 1
             
-            # Envoyer chaque crypto dans Redis
-            for crypto_item in crypto_data:
-                self.redis_client.lpush(self.queue_name, json.dumps(crypto_item))
-            
-            print(f"📤 {provider.name}: {len(crypto_data)} enregistrements envoyés à Redis", flush=True)
-            return len(crypto_data)
+            print(f"📡 {item['name']}: Queue ✅ | Stream ✅ ({subscribers} abonnés)", flush=True)
             
         except Exception as e:
-            print(f"❌ Erreur avec {provider.name}: {e}", flush=True)
-            return 0
+            print(f"❌ Erreur publication {item['name']}: {e}", flush=True)
     
-    def scrape_all_sources(self) -> dict:
-        """
-        Scrape toutes les sources configurées
-        
-        Returns:
-            dict: Statistiques du scraping {provider_name: count}
-        """
-        start_time = time.time()
-        stats = {}
-        
-        print(f"\n🔄 === DÉBUT CYCLE DE SCRAPING ({time.strftime('%H:%M:%S')}) ===", flush=True)
-        
-        for provider in self.providers:
-            try:
-                count = self.scrape_from_provider(provider)
-                stats[provider.name] = count
-                
-                # Petit délai entre providers pour éviter la surcharge
-                if len(self.providers) > 1:
-                    print("⏳ Délai entre providers...", flush=True)
-                    time.sleep(2)
-                    
-            except Exception as e:
-                print(f"💥 Erreur critique avec {provider.name}: {e}", flush=True)
-                stats[provider.name] = 0
-        
-        duration = time.time() - start_time
-        total_records = sum(stats.values())
-        
-        print(f"\n📊 === RÉSULTATS CYCLE ({duration:.1f}s) ===", flush=True)
-        for provider_name, count in stats.items():
-            print(f"  {provider_name}: {count} enregistrements", flush=True)
-        print(f"  TOTAL: {total_records} enregistrements", flush=True)
-        print(f"🔄 === FIN CYCLE ===\n", flush=True)
-        
-        return stats
-    
-    def test_providers(self):
-        """
-        Teste tous les providers sans envoyer à Redis (mode debug)
-        """
-        print("🧪 === MODE TEST PROVIDERS ===", flush=True)
-        
-        for provider in self.providers:
-            print(f"\n🔍 Test {provider.name}:", flush=True)
-            try:
-                data = provider.get_crypto_data()
-                if data:
-                    print(f"✅ {provider.name}: {len(data)} cryptos récupérées", flush=True)
-                    # Afficher les 3 premiers pour vérification
-                    for crypto in data[:3]:
-                        print(f"   📈 {crypto['symbol']}: ${crypto['price']:.2f}", flush=True)
-                else:
-                    print(f"❌ {provider.name}: Aucune donnée", flush=True)
-            except Exception as e:
-                print(f"💥 {provider.name}: Erreur - {e}", flush=True)
-        
-        print("\n🧪 === FIN TESTS ===", flush=True)
-    
-    def main_loop(self):
-        """
-        Boucle principale du scraper
-        """
-        print("🚀 Scraper CryptoViz Multi-Sources démarré !", flush=True)
-        print(f"📅 Intervalle: {self.scraping_interval}s ({self.scraping_interval//60}min)", flush=True)
-        
-        # Test initial
-        if os.getenv("TEST_MODE", "").lower() in ['true', '1', 'yes']:
-            self.test_providers()
-            return
-        
-        cycle_count = 0
-        
-        while True:
-            try:
-                cycle_count += 1
-                print(f"🔥 Cycle #{cycle_count}", flush=True)
-                
-                stats = self.scrape_all_sources()
-                
-                # Vérification de santé
-                if sum(stats.values()) == 0:
-                    print("⚠️ ALERTE: Aucune donnée récupérée ce cycle !", flush=True)
-                
-                print(f"💤 Attente {self.scraping_interval}s avant prochain cycle...", flush=True)
-                time.sleep(self.scraping_interval)
-                
-            except KeyboardInterrupt:
-                print("\n👋 Arrêt du scraper demandé", flush=True)
-                break
-            except Exception as e:
-                print(f"💥 Erreur dans la boucle principale: {e}", flush=True)
-                print("⏳ Retry dans 30s...", flush=True)
-                time.sleep(30)
+    print(f"✅ Publication terminée: {queue_success} queue, {pubsub_success} streaming", flush=True)
 
 def main():
-    """Point d'entrée principal"""
+    """Boucle principale avec debug"""
+    print("🚀 Scraper CryptoViz (Version Debug) démarré...", flush=True)
+    print(f"📊 API: {BASE_URL}", flush=True)
+    print(f"🔑 API Key: {API_KEY[:8]}...{API_KEY[-8:]}", flush=True)
+    print(f"🔄 Queue: {QUEUE_NAME}", flush=True)
+    print(f"📡 Pub/Sub: {PUBSUB_CHANNEL}", flush=True)
+    
+    # Test Redis
     try:
-        scraper = UnifiedCryptoScraper()
-        scraper.main_loop()
+        redis_client.ping()
+        print("✅ Redis connecté", flush=True)
     except Exception as e:
-        print(f"🔥 Erreur fatale: {e}", flush=True)
-        exit(1)
+        print(f"❌ Redis erreur: {e}", flush=True)
+        return
+    
+    cycle = 0
+    
+    while True:
+        cycle += 1
+        print(f"\n{'='*60}", flush=True)
+        print(f"🔄 CYCLE {cycle} - {time.strftime('%Y-%m-%d %H:%M:%S')}", flush=True)
+        print(f"{'='*60}", flush=True)
+        
+        try:
+            crypto_data = get_crypto_data()
+            
+            if crypto_data:
+                publish_dual(crypto_data)
+            else:
+                print("❌ CYCLE ÉCHOUÉ - Aucune donnée récupérée", flush=True)
+                
+        except Exception as e:
+            print(f"❌ ERREUR CYCLE {cycle}: {e}", flush=True)
+        
+        # Attente plus courte pour debug (2 minutes)
+        wait_time = 120
+        next_time = time.strftime('%H:%M:%S', time.localtime(time.time() + wait_time))
+        print(f"⏳ Pause {wait_time//60}min... (prochain: {next_time})", flush=True)
+        time.sleep(wait_time)
 
 if __name__ == "__main__":
     main()

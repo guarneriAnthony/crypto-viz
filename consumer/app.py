@@ -2,41 +2,63 @@ import redis
 import json
 import duckdb
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
+import threading
 
 # Configuration Redis
 redis_client = redis.Redis(host="redis", port=6379, db=0)
 QUEUE_NAME = "crypto_data"
 
-def init_database():
-    """Initialise la base de données et la table"""
+def check_table_structure():
+    """Vérifie et affiche la structure de la table"""
     try:
-        # DuckDB gère automatiquement la concurrence depuis la v0.8+
+        conn = duckdb.connect('/data/crypto_analytics.duckdb', read_only=True)
+        
+        # Vérifier si la table existe
+        tables = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='crypto_prices'").fetchall()
+        
+        if not tables:
+            print("⚠️ Table crypto_prices n'existe pas encore", flush=True)
+            conn.close()
+            return None
+            
+        # Obtenir la structure
+        structure = conn.execute("DESCRIBE crypto_prices").fetchall()
+        print("📊 Structure actuelle de la table:", flush=True)
+        for i, (name, type_info, null_info, key, default, extra) in enumerate(structure):
+            print(f"   {i+1}. {name} ({type_info})", flush=True)
+        
+        conn.close()
+        return [col[0] for col in structure]  # Retourner les noms des colonnes
+        
+    except Exception as e:
+        print(f"❌ Erreur inspection table: {e}", flush=True)
+        return None
+
+def init_database():
+    """Initialise la base de données - compatible avec table existante"""
+    try:
         conn = duckdb.connect(database='/data/crypto_analytics.duckdb', read_only=False)
         
-        # Créer la table si elle n'existe pas avec la colonne source
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS crypto_prices (
-                name VARCHAR,
-                symbol VARCHAR,
-                price DOUBLE,
-                percent_change_24h DOUBLE,
-                market_cap DOUBLE,
-                source VARCHAR,
-                timestamp TIMESTAMP
-            )
-        """)
+        # Vérifier la structure existante
+        existing_columns = check_table_structure()
         
-        # Ajouter la colonne source si elle n'existe pas (pour la rétrocompatibilité)
-        try:
-            conn.execute("ALTER TABLE crypto_prices ADD COLUMN source VARCHAR")
-            print("ℹ️  Colonne source ajoutée à la table existante", flush=True)
-        except Exception as e:
-            if 'already exists' in str(e).lower():
-                pass  # La colonne existe déjà
-            else:
-                print(f"⚠️  Erreur lors de l'ajout de la colonne source: {e}", flush=True)
+        if existing_columns is None:
+            # Table n'existe pas - créer la version standard
+            print("🆕 Création nouvelle table crypto_prices", flush=True)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS crypto_prices (
+                    name VARCHAR,
+                    symbol VARCHAR,
+                    price DOUBLE,
+                    percent_change_24h DOUBLE,
+                    market_cap DOUBLE,
+                    timestamp TIMESTAMP
+                )
+            """)
+        else:
+            print(f"✅ Table existante trouvée avec {len(existing_columns)} colonnes", flush=True)
         
         conn.close()
         print("✅ Base de données initialisée", flush=True)
@@ -46,43 +68,109 @@ def init_database():
         print(f"❌ Erreur d'initialisation DB: {e}", flush=True)
         return False
 
+def get_insert_query():
+    """Génère la requête d'insertion adaptée à la structure de table"""
+    try:
+        conn = duckdb.connect('/data/crypto_analytics.duckdb', read_only=True)
+        structure = conn.execute("DESCRIBE crypto_prices").fetchall()
+        conn.close()
+        
+        columns = [col[0] for col in structure]
+        print(f"📝 Colonnes détectées: {columns}", flush=True)
+        
+        # Vérifier si on a un ID auto-incrémenté
+        if 'id' in [col.lower() for col in columns]:
+            # Table avec ID - exclure l'ID de l'insertion
+            non_id_columns = [col for col in columns if col.lower() != 'id']
+            placeholders = ', '.join(['?' for _ in non_id_columns])
+            column_names = ', '.join(non_id_columns)
+            query = f"INSERT INTO crypto_prices ({column_names}) VALUES ({placeholders})"
+            print(f"🔧 Mode ID auto: INSERT INTO crypto_prices ({column_names}) VALUES ({placeholders})", flush=True)
+        else:
+            # Table standard - insérer toutes les colonnes
+            placeholders = ', '.join(['?' for _ in columns])
+            query = f"INSERT INTO crypto_prices VALUES ({placeholders})"
+            print(f"🔧 Mode standard: INSERT INTO crypto_prices VALUES ({placeholders})", flush=True)
+            
+        return query, columns
+        
+    except Exception as e:
+        print(f"❌ Erreur génération requête: {e}", flush=True)
+        # Fallback sur requête standard
+        return "INSERT INTO crypto_prices VALUES (?, ?, ?, ?, ?, ?)", ['name', 'symbol', 'price', 'percent_change_24h', 'market_cap', 'timestamp']
+
+def cleanup_old_data_simple():
+    """Nettoyage simple - garde 7 jours"""
+    try:
+        print("🧹 Nettoyage automatique des données...", flush=True)
+        conn = duckdb.connect('/data/crypto_analytics.duckdb', read_only=False)
+        
+        cutoff_date = datetime.now() - timedelta(days=7)
+        before_count = conn.execute("SELECT COUNT(*) FROM crypto_prices").fetchone()[0]
+        
+        conn.execute("DELETE FROM crypto_prices WHERE timestamp < ?", [cutoff_date])
+        conn.execute("VACUUM")
+        
+        after_count = conn.execute("SELECT COUNT(*) FROM crypto_prices").fetchone()[0]
+        conn.close()
+        
+        print(f"✅ Nettoyage: {before_count - after_count:,} enregistrements supprimés", flush=True)
+        return True
+        
+    except Exception as e:
+        print(f"❌ Erreur nettoyage: {e}", flush=True)
+        return False
+
+def start_cleanup_scheduler():
+    """Lance le nettoyage automatique"""
+    def cleanup_worker():
+        last_cleanup = time.time()
+        while True:
+            if time.time() - last_cleanup > 6 * 3600:  # 6 heures
+                cleanup_old_data_simple()
+                last_cleanup = time.time()
+            time.sleep(3600)
+    
+    cleanup_thread = threading.Thread(target=cleanup_worker, daemon=True)
+    cleanup_thread.start()
+    print("📅 Nettoyage automatique activé (toutes les 6h)", flush=True)
+
 def process_batch(data_batch):
-    """Traite un lot de données avec une seule transaction"""
+    """Traite un lot de données - adapté à la structure avec colonne source"""
     if not data_batch:
         return False
-        
+    
     retry_count = 3
     for attempt in range(retry_count):
         try:
             conn = duckdb.connect(database='/data/crypto_analytics.duckdb', read_only=False)
-            
-            # Utiliser une transaction pour l'efficacité
             conn.begin()
             
-            # Préparer les données pour insertion en batch
+            # Préparer les données avec la colonne source
             insert_data = []
             for crypto_item in data_batch:
-                insert_data.append((
+                # Ordre exact des colonnes : name, symbol, price, percent_change_24h, market_cap, source, timestamp
+                values = (
                     crypto_item['name'],
                     crypto_item['symbol'],
                     crypto_item['price'],
                     crypto_item['percent_change_24h'],
                     crypto_item['market_cap'],
-                    crypto_item.get('source', 'coinmarketcap'),  # Par défaut coinmarketcap si pas spécifié
+                    'coinmarketcap',  # NOUVELLE colonne source
                     crypto_item['timestamp']
-                ))
+                )
+                insert_data.append(values)
             
-            # Insertion en batch plus efficace avec la nouvelle colonne source
+            # Insertion avec toutes les 7 colonnes
             conn.executemany("""
-                INSERT INTO crypto_prices 
-                (name, symbol, price, percent_change_24h, market_cap, source, timestamp)
+                INSERT INTO crypto_prices (name, symbol, price, percent_change_24h, market_cap, source, timestamp)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """, insert_data)
             
             conn.commit()
             conn.close()
             
-            print(f"✅ Batch de {len(data_batch)} enregistrements traités", flush=True)
+            print(f"✅ Batch de {len(data_batch)} enregistrements traités (source: coinmarketcap)", flush=True)
             return True
             
         except Exception as e:
@@ -94,24 +182,30 @@ def process_batch(data_batch):
                 pass
                 
             if attempt < retry_count - 1:
-                time.sleep(1 + attempt)  # Backoff progressif
+                time.sleep(1 + attempt)
             else:
-                print(f"🔥 Échec définitif du batch après {retry_count} tentatives", flush=True)
+                print(f"🔥 Échec définitif du batch", flush=True)
+                print(f"🔍 Debug - Query: {insert_query}", flush=True)
+                print(f"🔍 Debug - Colonnes: {columns}", flush=True)
+                print(f"🔍 Debug - Exemple data: {data_batch[0] if data_batch else 'None'}", flush=True)
                 return False
 
 def process_data():
-    """Lit les données de Redis et les stocke dans DuckDB"""
-    print("🚀 Consumer démarré (avec support multi-sources)...", flush=True)
+    """Fonction principale"""
+    print("🚀 Consumer avec détection automatique de structure démarré...", flush=True)
     
-    # Initialiser la base avec plusieurs tentatives
+    # Initialiser la base
     for attempt in range(3):
         if init_database():
             break
         print(f"Tentative d'initialisation {attempt + 1}/3 échouée, retry dans 3s...", flush=True)
         time.sleep(3)
     else:
-        print("🔥 Impossible d'initialiser la base de données, arrêt du consumer", flush=True)
+        print("🔥 Impossible d'initialiser la base de données", flush=True)
         return
+    
+    # Démarrer le nettoyage automatique
+    start_cleanup_scheduler()
     
     batch = []
     batch_size = 10
@@ -121,29 +215,23 @@ def process_data():
     
     while True:
         try:
-            # Récupère une donnée de la queue (avec timeout)
             data = redis_client.brpop(QUEUE_NAME, timeout=5)
             
             if data:
-                # Convertit JSON en dictionnaire Python
                 crypto_item = json.loads(data[1])
                 batch.append(crypto_item)
-                source = crypto_item.get('source', 'coinmarketcap')
-                print(f"📥 Batch +1: {crypto_item['name']} ({source}) ({len(batch)}/{batch_size})", flush=True)
+                print(f"📥 Batch +1: {crypto_item['name']} ({len(batch)}/{batch_size})", flush=True)
                 
-                # Traiter le batch si plein ou si timeout
                 if len(batch) >= batch_size or (time.time() - last_batch_time) > 30:
                     print(f"🔄 Traitement batch de {len(batch)} éléments...", flush=True)
                     if process_batch(batch):
                         batch = []
                         last_batch_time = time.time()
                     else:
-                        # En cas d'échec, garder seulement les plus récents pour éviter l'accumulation
                         batch = batch[-batch_size//2:] if len(batch) > batch_size//2 else batch
                         print(f"⚠️ Échec batch, conservation de {len(batch)} éléments", flush=True)
                         
             else:
-                # Timeout - traiter le batch existant s'il y en a
                 if batch:
                     print(f"⏰ Timeout Redis, traitement batch partiel ({len(batch)} items)", flush=True)
                     if process_batch(batch):

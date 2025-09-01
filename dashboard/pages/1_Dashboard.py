@@ -138,7 +138,7 @@ if not selected_sources:
 st.sidebar.subheader(" Période d'Analyse")
 date_range = st.sidebar.date_input(
     "Sélectionner la période",
-    value=[max_data_date - timedelta(days=1), max_data_date],
+    value=[min_data_date, max_data_date],
     min_value=min_data_date,
     max_value=max_data_date
 )

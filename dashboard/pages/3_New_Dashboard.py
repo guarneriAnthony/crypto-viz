@@ -30,7 +30,7 @@ def inject_streaming_javascript():
     
     function connectToStream() {
         try {
-            eventSource = new EventSource('http://localhost:5000/stream');
+            eventSource = new EventSource('http://192.168.1.76:5000/stream');
             
             eventSource.onopen = function(event) {
                 console.log("✅ Connexion streaming établie");
@@ -456,7 +456,7 @@ if not latest_data.empty:
             return 'background-color: #f8d7da'
         return ''
     
-    styled_data = display_data.style.applymap(color_change, subset=['percent_change_24h'])
+    styled_data = display_data.style.map(color_change, subset=['percent_change_24h'])
     st.dataframe(styled_data, width="stretch", height=300)
     
     # Graphique temps réel

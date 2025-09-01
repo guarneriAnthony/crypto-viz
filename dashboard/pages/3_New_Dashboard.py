@@ -334,7 +334,7 @@ def get_latest_data():
         result = conn.execute("""
             SELECT name, symbol, price, percent_change_24h, market_cap, source, timestamp
             FROM crypto_prices 
-            WHERE timestamp >= datetime('now', '-10 minutes')
+            WHERE timestamp >= (current_timestamp - INTERVAL '10 minutes')
             ORDER BY timestamp DESC 
             LIMIT 20
         """).fetchdf()
@@ -356,7 +356,7 @@ def get_streaming_metrics():
         # Données récentes (dernières 10 minutes)
         recent_count = conn.execute("""
             SELECT COUNT(*) FROM crypto_prices 
-            WHERE timestamp >= datetime('now', '-10 minutes')
+            WHERE timestamp >= (current_timestamp - INTERVAL '10 minutes')
         """).fetchone()[0]
         
         # Données par source
@@ -510,7 +510,7 @@ if not cryptos_data.empty:
                 SELECT name, price, timestamp, percent_change_24h
                 FROM crypto_prices 
                 WHERE name IN ('{crypto_names}')
-                AND timestamp >= datetime('now', '-24 hours')
+                AND timestamp >= (current_timestamp - INTERVAL '24 hours')
                 ORDER BY timestamp
             """
             result = conn.execute(query).fetchdf()

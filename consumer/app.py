@@ -54,6 +54,7 @@ def init_database():
                     price DOUBLE,
                     percent_change_24h DOUBLE,
                     market_cap DOUBLE,
+                    source VARCHAR,
                     timestamp TIMESTAMP
                 )
             """)
@@ -140,9 +141,15 @@ def process_batch(data_batch):
     if not data_batch:
         return False
     
-    retry_count = 3
+    retry_count = 5  # Augmenter le nombre de tentatives
     for attempt in range(retry_count):
         try:
+            # Attendre avant chaque tentative (backoff exponentiel)
+            if attempt > 0:
+                wait_time = min(2 ** attempt, 10)  # Max 10 secondes
+                print(f"⏳ Attente {wait_time}s avant tentative {attempt + 1}...", flush=True)
+                time.sleep(wait_time)
+            
             conn = duckdb.connect(database='/data/crypto_analytics.duckdb', read_only=False)
             conn.begin()
             
@@ -185,8 +192,6 @@ def process_batch(data_batch):
                 time.sleep(1 + attempt)
             else:
                 print(f"🔥 Échec définitif du batch", flush=True)
-                print(f"🔍 Debug - Query: {insert_query}", flush=True)
-                print(f"🔍 Debug - Colonnes: {columns}", flush=True)
                 print(f"🔍 Debug - Exemple data: {data_batch[0] if data_batch else 'None'}", flush=True)
                 return False
 

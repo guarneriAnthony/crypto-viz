@@ -121,3 +121,7 @@ __pycache__/
 volumes/
 data/temp/
 
+# 📝 Fichiers de configuration WARP
+WARP.md
+.warp/
+

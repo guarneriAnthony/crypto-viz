@@ -15,7 +15,7 @@ services:
     depends_on:
       - redis
     environment:
-      - COINMARKETCAP_API_KEY=${COINMARKETCAP_API_KEY:-your-api-key-here}
+      - COINMARKETCAP_API_KEY=f6f6031f-2dd6-45c4-8b98-2df503c0efb2
     networks:
       - crypto-net
 
@@ -41,9 +41,21 @@ services:
     networks:
       - crypto-net
 
+  streaming_server:
+    build: ./streaming_server
+    container_name: crypto_streaming
+    ports:
+      - "5000:5000"
+    depends_on:
+      - redis
+    networks:
+      - crypto-net
+    restart: unless-stopped
+
 volumes:
   redis_data:
 
 networks:
   crypto-net:
     driver: bridge
+    

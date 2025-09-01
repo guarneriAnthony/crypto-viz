@@ -457,7 +457,7 @@ if not latest_data.empty:
         return ''
     
     styled_data = display_data.style.applymap(color_change, subset=['percent_change_24h'])
-    st.dataframe(styled_data, use_container_width=True, height=300)
+    st.dataframe(styled_data, width="stretch", height=300)
     
     # Graphique temps réel
     if len(latest_data) > 1:
@@ -480,7 +480,7 @@ if not latest_data.empty:
             yaxis_title="Prix (USD)"
         )
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
 else:
     st.info(" En attente des premières données streaming...")
@@ -530,7 +530,7 @@ if not cryptos_data.empty:
             )
             
             fig.update_layout(height=600)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
 # Auto-refresh JavaScript
 if auto_refresh:

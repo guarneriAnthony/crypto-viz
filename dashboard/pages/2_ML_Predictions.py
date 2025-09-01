@@ -135,7 +135,7 @@ for i, crypto in enumerate(crypto_list[:10]):  # Limiter à 10 pour l'affichage
             button_label = crypto
             button_type = "secondary"
             
-        if st.button(button_label, key=f"crypto_btn_{crypto}", type=button_type, use_container_width=True):
+        if st.button(button_label, key=f"crypto_btn_{crypto}", type=button_type, width="stretch"):
             st.session_state.selected_crypto = crypto
             st.session_state.analysis_results = None  # Reset analysis
             st.session_state.force_refresh = True
@@ -211,13 +211,13 @@ st.sidebar.markdown("###  Actions")
 
 col1, col2 = st.sidebar.columns(2)
 with col1:
-    if st.button(" Actualiser", type="secondary", use_container_width=True):
+    if st.button(" Actualiser", type="secondary", width="stretch"):
         st.session_state.force_refresh = True
         st.cache_data.clear()
         st.rerun()
 
 with col2:
-    if st.button(" Analyser", type="primary", use_container_width=True):
+    if st.button(" Analyser", type="primary", width="stretch"):
         st.session_state.force_refresh = True
         st.session_state.analysis_results = None
         st.rerun()
@@ -353,7 +353,7 @@ for model, prediction in predictions.items():
     })
 
 models_df = pd.DataFrame(models_data)
-st.dataframe(models_df, use_container_width=True, hide_index=True)
+st.dataframe(models_df, width="stretch", hide_index=True)
 
 # Graphique principal
 st.header(" Analyse Technique + Prédictions")
@@ -413,7 +413,7 @@ fig.update_layout(
     hovermode='x unified'
 )
 
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig, width="stretch")
 
 # Métriques de performance
 st.header(" Métriques Performance")
@@ -441,7 +441,7 @@ with col3:
 # Auto-refresh
 st.sidebar.markdown("---")
 st.sidebar.markdown("###  Actualisation")
-if st.sidebar.button(" Actualiser ML", use_container_width=True):
+if st.sidebar.button(" Actualiser ML", width="stretch"):
     st.cache_data.clear()
     st.session_state.force_refresh = True
     st.rerun()

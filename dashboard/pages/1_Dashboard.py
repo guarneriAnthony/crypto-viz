@@ -255,7 +255,7 @@ with col2:
     # Test basique streaming server
     try:
         import requests
-        response = requests.get("http://localhost:5000/health", timeout=2)
+        response = requests.get("http://crypto_streaming:5000/health", timeout=2)
         if response.status_code == 200:
             health_data = response.json()
             if health_data.get('status') == 'healthy':
@@ -301,7 +301,7 @@ if len(selected_cryptos) > 0:
         showlegend=True
     )
     
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 # Comparaison par source
 if len(available_sources) > 1:
@@ -336,7 +336,7 @@ if len(available_sources) > 1:
         )
         fig.update_traces(texttemplate='$%{text:,.2f}', textposition='outside')
         fig.update_layout(height=500)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
 # Statistiques détaillées
 st.header(" Statistiques Pipeline")
@@ -351,7 +351,7 @@ with col1:
     }).round(2)
     crypto_stats.columns = ['Prix Moyen', 'Prix Min', 'Prix Max', 'Volatilité', 'Records']
     crypto_stats = crypto_stats.sort_values('Prix Moyen', ascending=False)
-    st.dataframe(crypto_stats, use_container_width=True)
+    st.dataframe(crypto_stats, width="stretch")
 
 with col2:
     st.subheader(" Par Source")
@@ -378,7 +378,7 @@ with col2:
         
         display_sources = sources_data[['source', 'records', 'Status']].copy()
         display_sources.columns = ['Source', 'Records', 'Status']
-        st.dataframe(display_sources, use_container_width=True)
+        st.dataframe(display_sources, width="stretch")
 
 # Auto-refresh
 st.sidebar.markdown("---")

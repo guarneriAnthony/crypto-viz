@@ -156,7 +156,7 @@ def process_batch(data_batch):
                     crypto_item['price'],
                     crypto_item['percent_change_24h'],
                     crypto_item['market_cap'],
-                    'coinmarketcap',  # NOUVELLE colonne source
+                    crypto_item.get('source', 'unknown'),
                     crypto_item['timestamp']
                 )
                 insert_data.append(values)

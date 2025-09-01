@@ -1,6 +1,3 @@
-"""
-Provider pour l'API CoinGecko
-"""
 from typing import List, Dict
 from .base import BaseProvider
 
@@ -37,7 +34,7 @@ class CoinGeckoProvider(BaseProvider):
             'sparkline': 'false',
             'price_change_percentage': '24h'
         }
-        self.timeout = 20  # Timeout plus long pour éviter les erreurs
+        self.timeout = 20
         
         print(f"🔄 Récupération depuis {self.name}...", flush=True)
         data = self._make_request(url, params=params)
@@ -46,33 +43,69 @@ class CoinGeckoProvider(BaseProvider):
             print(f"❌ Pas de données reçues de {self.name}", flush=True)
             return []
         
-        crypto_mapping = {
+        # SOLUTION 1: Mapping basé sur les IDs CoinGecko (plus fiable)
+        crypto_id_mapping = {
             'bitcoin': 'Bitcoin',
             'ethereum': 'Ethereum',
             'binancecoin': 'Binance Coin',
             'solana': 'Solana',
-            'ripple': 'Ripple'
+            'ripple': 'Ripple',
+            'cardano': 'Cardano',
+            'dogecoin': 'Dogecoin',
+            'polygon': 'Polygon',
+            'litecoin': 'Litecoin',
+            'avalanche-2': 'Avalanche'
+        }
+        
+        # SOLUTION 2: Mapping basé sur les symbols (alternative)
+        crypto_symbol_mapping = {
+            'btc': 'Bitcoin',
+            'eth': 'Ethereum', 
+            'bnb': 'Binance Coin',
+            'sol': 'Solana',
+            'xrp': 'Ripple',
+            'ada': 'Cardano',
+            'doge': 'Dogecoin',
+            'matic': 'Polygon',
+            'ltc': 'Litecoin',
+            'avax': 'Avalanche'
         }
         
         crypto_list = []
         for crypto in data:
             try:
-                symbol = crypto.get('symbol', '').lower()
-                if symbol in crypto_mapping:
-                    crypto_item = {
-                        'name': crypto_mapping[symbol],
-                        'symbol': symbol.upper(),
-                        'price': crypto.get('current_price', 0),
-                        'percent_change_24h': crypto.get('price_change_percentage_24h', 0),
-                        'market_cap': crypto.get('market_cap', 0),
-                        'source': self.get_source_name(),
-                        'timestamp': self._format_timestamp()
-                    }
-                    crypto_list.append(crypto_item)
-                    print(f"✅ {self.name}: {crypto_item['name']} ({crypto_item['symbol']}) - ${crypto_item['price']:.2f}", flush=True)
+                # Utilisation de l'ID pour plus de fiabilité
+                crypto_id = crypto.get('id', '').lower()
+                symbol = crypto.get('symbol', '').upper()
+                
+                # Vérifier d'abord par ID (plus fiable)
+                if crypto_id in crypto_id_mapping:
+                    crypto_name = crypto_id_mapping[crypto_id]
+                # Sinon essayer par symbol en backup
+                elif symbol.lower() in crypto_symbol_mapping:
+                    crypto_name = crypto_symbol_mapping[symbol.lower()]
+                else:
+                    # Si aucun mapping, prendre les 5 premiers du top 10 par défaut
+                    if len(crypto_list) < 5:
+                        crypto_name = crypto.get('name', 'Unknown')
+                    else:
+                        continue
+                
+                crypto_item = {
+                    'name': crypto_name,
+                    'symbol': symbol,
+                    'price': crypto.get('current_price', 0),
+                    'percent_change_24h': crypto.get('price_change_percentage_24h', 0),
+                    'market_cap': crypto.get('market_cap', 0),
+                    'source': self.get_source_name(),
+                    'timestamp': self._format_timestamp()
+                }
+                
+                crypto_list.append(crypto_item)
+                print(f"✅ {self.name}: {crypto_item['name']} ({crypto_item['symbol']}) - ${crypto_item['price']:.2f}", flush=True)
                 
             except Exception as e:
-                print(f"⚠️ Erreur parsing {self.name} pour {crypto.get('symbol', 'unknown')}: {e}", flush=True)
+                print(f"⚠️ Erreur parsing {self.name} pour {crypto.get('id', 'unknown')}: {e}", flush=True)
                 continue
         
         print(f"📊 {self.name}: {len(crypto_list)} cryptos récupérées", flush=True)

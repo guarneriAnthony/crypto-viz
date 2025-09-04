@@ -1,2 +1,4 @@
 redis
 requests
+kafka-python==2.0.2
+python-snappy==0.6.1

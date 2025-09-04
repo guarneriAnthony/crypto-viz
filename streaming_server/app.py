@@ -1,12 +1,14 @@
 from flask import Flask, Response, jsonify
 from flask_cors import CORS
-import redis
 import json
 import time
 import logging
 import threading
 from datetime import datetime
 import queue
+import os
+from kafka import KafkaConsumer
+from kafka.errors import KafkaError
 
 # Configuration
 app = Flask(__name__)
@@ -14,26 +16,23 @@ CORS(app)  # Permettre les requêtes cross-origin depuis le dashboard
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Redis connection
-redis_client = redis.Redis(host="redis", port=6379, db=0, decode_responses=True)
-
 # Stats globales du streaming
 streaming_stats = {
     'connected_clients': 0,
     'messages_sent': 0,
     'uptime': datetime.now(),
     'last_data_received': None,
-    'redis_status': 'disconnected'
+    'redpanda_status': 'disconnected'
 }
 
-class StreamingManager:
-    """Gestionnaire centralisé du streaming"""
+class RedpandaStreamingManager:
+    """Gestionnaire centralisé du streaming avec Redpanda"""
     
     def __init__(self):
         self.clients = {}  # Dict des clients connectés
         self.running = False
-        self.pubsub = None
-        self.redis_thread = None
+        self.consumer = None
+        self.consumer_thread = None
         
     def start(self):
         """Démarre le gestionnaire de streaming"""
@@ -44,65 +43,76 @@ class StreamingManager:
         self.running = True
         
         try:
-            # Test de connexion Redis
-            redis_client.ping()
-            streaming_stats['redis_status'] = 'connected'
-            logger.info("✅ Connexion Redis établie")
+            # Configuration Redpanda Consumer
+            brokers = os.getenv("REDPANDA_BROKERS", "redpanda:9092")
+            
+            self.consumer = KafkaConsumer(
+                'crypto-streaming',  # Topic pour streaming temps réel
+                bootstrap_servers=[brokers],
+                group_id='crypto-streaming-consumer',
+                value_deserializer=lambda m: json.loads(m.decode('utf-8')),
+                key_deserializer=lambda m: m.decode('utf-8') if m else None,
+                auto_offset_reset='latest',  # Nouveaux messages seulement
+                enable_auto_commit=True,
+                session_timeout_ms=30000, heartbeat_interval_ms=10000  # Timeout court pour réactivité
+            )
+            
+            streaming_stats['redpanda_status'] = 'connected'
+            logger.info("✅ Connexion Redpanda établie")
+            logger.info(f"📡 Brokers: {brokers}")
+            logger.info(f"📊 Topic: crypto-streaming")
+            
         except Exception as e:
-            logger.error(f"❌ Erreur connexion Redis: {e}")
-            streaming_stats['redis_status'] = 'error'
+            logger.error(f"❌ Erreur connexion Redpanda: {e}")
+            streaming_stats['redpanda_status'] = 'error'
             return False
         
-        # Configurer Redis Pub/Sub
-        self.pubsub = redis_client.pubsub()
-        self.pubsub.subscribe('crypto_updates')
-        logger.info("📡 Abonnement à Redis 'crypto_updates'")
-        
-        # Démarrer le thread d'écoute Redis
-        self.redis_thread = threading.Thread(target=self._listen_redis, daemon=True)
-        self.redis_thread.start()
+        # Démarrer le thread d'écoute Redpanda
+        self.consumer_thread = threading.Thread(target=self._listen_redpanda, daemon=True)
+        self.consumer_thread.start()
         
         logger.info("🚀 Streaming Manager démarré avec succès")
         return True
     
-    def _listen_redis(self):
-        """Écoute les messages Redis et les diffuse aux clients"""
-        logger.info("👂 Démarrage écoute Redis Pub/Sub...")
+    def _listen_redpanda(self):
+        """Écoute les messages Redpanda et les diffuse aux clients"""
+        logger.info("👂 Démarrage écoute Redpanda...")
         
         try:
-            for message in self.pubsub.listen():
+            for message in self.consumer:
                 if not self.running:
                     break
                     
-                if message['type'] == 'message':
-                    data = message['data']
+                try:
+                    # Décoder le message
+                    crypto_data = message.value
                     streaming_stats['last_data_received'] = datetime.now()
                     
-                    try:
-                        # Parser pour obtenir le nom de la crypto
-                        crypto_data = json.loads(data)
-                        crypto_name = crypto_data.get('name', 'Unknown')
-                        
-                        logger.info(f"📡 Nouvelle donnée: {crypto_name} - Diffusion à {len(self.clients)} clients")
-                        
-                        # Préparer le message pour SSE
-                        sse_message = {
-                            'type': 'crypto_update',
-                            'data': crypto_data,
-                            'timestamp': datetime.now().isoformat()
-                        }
-                        
-                        # Diffuser à tous les clients connectés
-                        self._broadcast_to_clients(json.dumps(sse_message))
-                        
-                    except json.JSONDecodeError as e:
-                        logger.error(f"❌ Erreur parsing JSON: {e}")
-                    except Exception as e:
-                        logger.error(f"❌ Erreur traitement message: {e}")
-                        
+                    crypto_name = crypto_data.get('name', 'Unknown')
+                    logger.info(f"📡 Nouvelle donnée: {crypto_name} - Diffusion à {len(self.clients)} clients")
+                    
+                    # Préparer le message pour SSE
+                    sse_message = {
+                        'type': 'crypto_update',
+                        'data': crypto_data,
+                        'timestamp': datetime.now().isoformat(),
+                        'source': 'redpanda'
+                    }
+                    
+                    # Diffuser à tous les clients connectés
+                    self._broadcast_to_clients(json.dumps(sse_message))
+                    
+                except json.JSONDecodeError as e:
+                    logger.error(f"❌ Erreur parsing JSON: {e}")
+                except Exception as e:
+                    logger.error(f"❌ Erreur traitement message: {e}")
+                    
+        except KafkaError as e:
+            logger.error(f"❌ Erreur Kafka: {e}")
+            streaming_stats['redpanda_status'] = 'error'
         except Exception as e:
-            logger.error(f"❌ Erreur Redis listen: {e}")
-            streaming_stats['redis_status'] = 'error'
+            logger.error(f"❌ Erreur Redpanda listen: {e}")
+            streaming_stats['redpanda_status'] = 'error'
     
     def _broadcast_to_clients(self, message):
         """Diffuse un message à tous les clients connectés"""
@@ -141,9 +151,10 @@ class StreamingManager:
         # Message de bienvenue
         welcome_msg = {
             'type': 'welcome',
-            'message': 'Streaming CryptoViz connecté',
+            'message': 'Streaming CryptoViz Redpanda connecté',
             'client_id': client_id,
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now().isoformat(),
+            'backend': 'redpanda'
         }
         
         try:
@@ -161,7 +172,7 @@ class StreamingManager:
             logger.info(f"➖ Client {client_id} déconnecté (total: {len(self.clients)})")
 
 # Instance globale du gestionnaire
-streaming_manager = StreamingManager()
+streaming_manager = RedpandaStreamingManager()
 
 @app.route('/stream')
 def stream():
@@ -184,10 +195,11 @@ def stream():
                     heartbeat = {
                         'type': 'heartbeat',
                         'timestamp': datetime.now().isoformat(),
+                        'backend': 'redpanda',
                         'stats': {
                             'connected_clients': streaming_stats['connected_clients'],
                             'messages_sent': streaming_stats['messages_sent'],
-                            'redis_status': streaming_stats['redis_status']
+                            'redpanda_status': streaming_stats['redpanda_status']
                         }
                     }
                     yield f"data: {json.dumps(heartbeat)}\n\n"
@@ -217,6 +229,7 @@ def get_stats():
     current_stats = streaming_stats.copy()
     current_stats['uptime_seconds'] = (datetime.now() - current_stats['uptime']).total_seconds()
     current_stats['uptime'] = current_stats['uptime'].isoformat()
+    current_stats['backend'] = 'redpanda'
     
     if current_stats['last_data_received']:
         current_stats['last_data_received'] = current_stats['last_data_received'].isoformat()
@@ -227,25 +240,25 @@ def get_stats():
 def health():
     """Health check endpoint"""
     try:
-        # Test Redis
-        redis_client.ping()
-        redis_status = 'ok'
+        # Test Redpanda via consumer status
+        redpanda_status = 'ok' if streaming_manager.consumer else 'error'
     except:
-        redis_status = 'error'
+        redpanda_status = 'error'
     
     health_status = {
-        'status': 'healthy' if redis_status == 'ok' else 'unhealthy',
-        'redis': redis_status,
+        'status': 'healthy' if redpanda_status == 'ok' else 'unhealthy',
+        'redpanda': redpanda_status,
         'streaming': 'active' if streaming_manager.running else 'inactive',
         'clients': len(streaming_manager.clients) if streaming_manager.clients else 0,
-        'timestamp': datetime.now().isoformat()
+        'timestamp': datetime.now().isoformat(),
+        'backend': 'redpanda'
     }
     
-    return jsonify(health_status), 200 if redis_status == 'ok' else 500
+    return jsonify(health_status), 200 if redpanda_status == 'ok' else 500
 
 @app.route('/test')
 def test():
-    """Endpoint de test pour déclencher une donnée factice"""
+    """Endpoint de test pour vérifier le streaming"""
     test_data = {
         'name': 'TestCoin',
         'symbol': 'TEST',
@@ -253,25 +266,42 @@ def test():
         'percent_change_24h': 1.23,
         'market_cap': 1000000,
         'source': 'test',
-        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'ingestion_timestamp': datetime.now().isoformat(),
+        'producer_id': 'test-endpoint',
+        'schema_version': '2.0'
     }
     
-    # Publier sur Redis
-    redis_client.publish('crypto_updates', json.dumps(test_data))
+    # Simuler la réception d'un message
+    sse_message = {
+        'type': 'crypto_update',
+        'data': test_data,
+        'timestamp': datetime.now().isoformat(),
+        'source': 'test-endpoint'
+    }
+    
+    # Diffuser à tous les clients connectés
+    streaming_manager._broadcast_to_clients(json.dumps(sse_message))
     
     return jsonify({
-        'message': 'Test data published',
-        'data': test_data
+        'message': 'Test data broadcasted to streaming clients',
+        'data': test_data,
+        'clients_notified': len(streaming_manager.clients),
+        'backend': 'redpanda'
     })
 
 if __name__ == "__main__":
-    logger.info("🌐 Démarrage Serveur de Streaming CryptoViz...")
+    logger.info("🌐 Démarrage Serveur de Streaming CryptoViz avec Redpanda...")
+    
+    # Attendre que Redpanda soit disponible
+    logger.info("⏳ Attente de la disponibilité Redpanda...")
+    time.sleep(15)
     
     # Démarrer le streaming manager
     if streaming_manager.start():
-        logger.info("✅ Streaming Manager initialisé")
+        logger.info("✅ Redpanda Streaming Manager initialisé")
     else:
-        logger.error("❌ Échec initialisation Streaming Manager")
+        logger.error("❌ Échec initialisation Redpanda Streaming Manager")
     
     logger.info("🚀 Serveur prêt sur http://0.0.0.0:5000")
     logger.info("📡 Endpoints disponibles:")
@@ -279,5 +309,6 @@ if __name__ == "__main__":
     logger.info("   • /stats - Statistiques")
     logger.info("   • /health - Health check")
     logger.info("   • /test - Test manuel")
+    logger.info("🔧 Backend: Redpanda")
     
     app.run(host="0.0.0.0", port=5000, debug=False, threaded=True)

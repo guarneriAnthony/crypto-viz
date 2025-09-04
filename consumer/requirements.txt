@@ -1,4 +1,4 @@
-redis
+kafka-python==2.0.2
 duckdb
 pandas
 schedule

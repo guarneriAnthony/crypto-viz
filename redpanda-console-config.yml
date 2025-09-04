@@ -1,0 +1,11 @@
+kafka:
+  brokers: ["redpanda:9092"]
+  
+server:
+  httpListenPort: 8080
+
+connect:
+  enabled: false
+
+console:
+  enabled: true

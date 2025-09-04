@@ -1,0 +1,194 @@
+services:
+  # Redpanda (conservé de V2)
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v23.2.8
+    container_name: crypto_redpanda
+    command:
+      - redpanda
+      - start
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://redpanda:9092,external://192.168.1.76:19092
+      - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:18082
+      - --advertise-pandaproxy-addr internal://redpanda:8082,external://192.168.1.76:18082
+      - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:18081
+      - --rpc-addr redpanda:33145
+      - --advertise-rpc-addr redpanda:33145
+      - --smp 1
+      - --memory 1G
+      - --mode dev-container
+      - --default-log-level=info
+    ports:
+      - "19092:19092" # Kafka API
+      - "18081:18081" # Schema Registry
+      - "18082:18082" # HTTP Proxy
+      - "9644:9644"   # Admin API
+    volumes:
+      - redpanda_data:/var/lib/redpanda/data
+    networks:
+      - crypto-net
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  # MinIO S3 Storage
+  minio:
+    image: minio/minio:RELEASE.2023-09-07T02-05-02Z
+    container_name: crypto_minio
+    ports:
+      - "9002:9000"   # API
+      - "9001:9001"   # Console
+    environment:
+      MINIO_ROOT_USER: cryptoviz
+      MINIO_ROOT_PASSWORD: cryptoviz2024
+      MINIO_DEFAULT_BUCKETS: "crypto-data,crypto-ml,crypto-catalog"
+    volumes:
+      - minio_data:
+      - minio_data:/data
+      - ./minio/init:/docker-entrypoint-initdb.d
+    command: server /data --console-address ":9001"
+    networks:
+      - crypto-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # Spark Master
+  spark-master:
+    image: bitnami/spark:3.4.1
+    container_name: crypto_spark_master
+    ports:
+      - "8081:8080"   # Spark UI
+      - "7077:7077"   # Spark Master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_MASTER_HOST=spark-master
+      - SPARK_MASTER_PORT=7077
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    volumes:
+      - ./spark/apps:/opt/spark/apps
+      - ./spark/conf:/opt/spark/conf
+    networks:
+      - crypto-net
+
+  # Spark Worker
+  spark-worker:
+    image: bitnami/spark:3.4.1
+    container_name: crypto_spark_worker
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=2g
+      - SPARK_WORKER_CORES=2
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    volumes:
+      - ./spark/apps:/opt/spark/apps
+      - ./spark/conf:/opt/spark/conf
+    depends_on:
+      - spark-master
+    networks:
+      - crypto-net
+
+  # Spark Streaming Job (remplace consumer simple)
+  spark-streaming:
+    build: ./spark-consumer
+    container_name: crypto_spark_streaming
+    environment:
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - REDPANDA_BROKERS=redpanda:9092
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_ACCESS_KEY=cryptoviz
+      - MINIO_SECRET_KEY=cryptoviz2024
+    volumes:
+      - ./spark/apps:/opt/spark/apps
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      spark-master:
+        condition: service_started
+    networks:
+      - crypto-net
+    restart: unless-stopped
+
+  # Scraper (conservé)
+  scraper:
+    build: ./scraper
+    container_name: crypto_scraper
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    environment:
+      - COINMARKETCAP_API_KEY=f6f6031f-2dd6-45c4-8b98-2df503c0efb2
+      - REDPANDA_BROKERS=redpanda:9092
+    networks:
+      - crypto-net
+
+  # Dashboard V3 (lecture Parquet)
+  dashboard:
+    build: ./dashboard-v3
+    container_name: crypto_dashboard_v3
+    ports:
+      - "8501:8501"
+    environment:
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_ACCESS_KEY=cryptoviz  
+      - MINIO_SECRET_KEY=cryptoviz2024
+    volumes:
+      - ./data:/data
+    depends_on:
+      - minio
+    networks:
+      - crypto-net
+
+  # Streaming server (conservé)
+  streaming_server:
+    build: ./streaming_server
+    container_name: crypto_streaming
+    ports:
+      - "5000:5000"
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    environment:
+      - REDPANDA_BROKERS=redpanda:9092
+    networks:
+      - crypto-net
+    restart: unless-stopped
+
+  
+  # Console Redpanda
+  redpanda-console:
+    image: docker.redpanda.com/redpandadata/console:v2.3.1
+    container_name: crypto_redpanda_console
+    ports:
+      - "8090:8080"
+    environment:
+      CONFIG_FILEPATH: /tmp/config.yml
+      KAFKA_BROKERS: redpanda:9092
+      KAFKA_SCHEMAREGISTRY_ENABLED: false
+    volumes:
+      - ./redpanda-console-config.yml:/tmp/config.yml:ro
+    depends_on:
+      - redpanda
+    networks:
+      - crypto-net
+
+volumes:
+  minio_data:
+  redpanda_data:
+
+networks:
+  crypto-net:
+    driver: bridge

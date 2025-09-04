@@ -74,7 +74,7 @@ with st.sidebar:
         st.info("💾 Mode Fallback DuckDB")
 
 # Récupérer le reader de données
-@st.cache_resource
+@st.cache_resource(ttl=10)
 def get_reader():
     return get_data_reader()
 

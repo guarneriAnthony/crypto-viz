@@ -34,7 +34,7 @@ class CryptoSparkStreaming:
                 .config("spark.sql.adaptive.enabled", "true") \
                 .config("spark.sql.adaptive.coalescePartitions.enabled", "true") \
                 .config("spark.sql.streaming.checkpointLocation", "/tmp/checkpoint-v2") \
-                .config("spark.hadoop.fs.s3a.endpoint", os.getenv("MINIO_ENDPOINT", "http://minio:9000")) \
+                .config("spark.hadoop.fs.s3a.endpoint", os.getenv("MINIO_ENDPOINT", "http://192.168.1.76:9002")) \
                 .config("spark.hadoop.fs.s3a.access.key", os.getenv("MINIO_ACCESS_KEY", "cryptoviz")) \
                 .config("spark.hadoop.fs.s3a.secret.key", os.getenv("MINIO_SECRET_KEY", "cryptoviz2024")) \
                 .config("spark.hadoop.fs.s3a.path.style.access", "true") \
@@ -57,7 +57,7 @@ class CryptoSparkStreaming:
         try:
             s3_client = boto3.client(
                 's3',
-                endpoint_url=os.getenv("MINIO_ENDPOINT", "http://minio:9000"),
+                endpoint_url=os.getenv("MINIO_ENDPOINT", "http://192.168.1.76:9002"),
                 aws_access_key_id=os.getenv("MINIO_ACCESS_KEY", "cryptoviz"),
                 aws_secret_access_key=os.getenv("MINIO_SECRET_KEY", "cryptoviz2024")
             )

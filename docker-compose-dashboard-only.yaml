@@ -1,0 +1,18 @@
+services:
+  crypto-dashboard-modern:
+    build: 
+      context: ./dashboard-panel
+      dockerfile: Dockerfile
+    container_name: crypto-dashboard-modern
+    ports:
+      - "5006:5006"
+    environment:
+      - MINIO_ENDPOINT=192.168.1.76:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_BUCKET=crypto-data-partitioned
+      - PYTHONPATH=/app
+      - PANEL_ALLOW_WEBSOCKET_ORIGIN=*
+      - BOKEH_ALLOW_WEBSOCKET_ORIGIN=*
+    network_mode: host
+    restart: unless-stopped

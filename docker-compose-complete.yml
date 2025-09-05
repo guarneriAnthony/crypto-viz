@@ -1,0 +1,157 @@
+version: '3.8'
+
+services:
+  minio:
+    image: minio/minio:RELEASE.2024-01-16T16-07-38Z
+    container_name: crypto_minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9002:9000"  # API MinIO sur 9002 (pas 9000 occupé par Portainer)
+      - "9001:9001"  # UI MinIO
+    environment:
+      - MINIO_ROOT_USER=cryptoviz
+      - MINIO_ROOT_PASSWORD=cryptoviz2024
+    volumes:
+      - ./minio-data:/data
+    networks:
+      - crypto-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: crypto_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - crypto-net
+    restart: unless-stopped
+
+  redpanda:
+    image: redpandadata/redpanda:v23.3.3
+    container_name: crypto_redpanda
+    command:
+      - redpanda
+      - start
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://redpanda:9092,external://192.168.1.76:19092
+      - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:18082
+      - --advertise-pandaproxy-addr internal://redpanda:8082,external://192.168.1.76:18082
+      - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:18081
+      - --rpc-addr redpanda:33145
+      - --advertise-rpc-addr redpanda:33145
+      - --smp 1
+      - --memory 1G
+      - --mode dev-container
+    ports:
+      - "18081:18081"
+      - "18082:18082" 
+      - "19092:9092"
+      - "9644:9644"
+    networks:
+      - crypto-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  redpanda-console:
+    image: redpandadata/console:v2.4.1
+    container_name: crypto_redpanda_ui
+    ports:
+      - "8090:8080"
+    environment:
+      - KAFKA_BROKERS=redpanda:9092
+    depends_on:
+      - redpanda
+    networks:
+      - crypto-net
+    restart: unless-stopped
+
+  spark-master:
+    image: bitnami/spark:3.5.0
+    container_name: crypto_spark_master
+    environment:
+      - SPARK_MODE=master
+    ports:
+      - "7077:7077"
+      - "8082:8080"  # UI Spark Master sur 8082 (pas 8080 occupé)
+    networks:
+      - crypto-net
+    restart: unless-stopped
+
+  spark-worker:
+    image: bitnami/spark:3.5.0
+    container_name: crypto_spark_worker
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+    depends_on:
+      - spark-master
+    networks:
+      - crypto-net
+    restart: unless-stopped
+
+  scraper:
+    build: ./scraper
+    container_name: crypto_scraper
+    environment:
+      - COINMARKETCAP_API_KEY=${COINMARKETCAP_API_KEY:-demo}
+      - REDPANDA_BROKERS=redpanda:9092
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redpanda
+      - redis
+    networks:
+      - crypto-net
+    restart: unless-stopped
+
+  spark-streaming:
+    build: ./spark-consumer
+    container_name: crypto_spark_streaming
+    environment:
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
+      - MINIO_ENDPOINT=http://minio:9000  # Endpoint INTERNE (pas 9002)
+      - MINIO_ROOT_USER=cryptoviz
+      - MINIO_ROOT_PASSWORD=cryptoviz2024
+      - MINIO_BUCKET=crypto-data-partitioned
+    depends_on:
+      - spark-master
+      - redpanda
+      - minio
+    networks:
+      - crypto-net
+    restart: unless-stopped
+
+  crypto-dashboard-panel:
+    build: ./dashboard-panel
+    container_name: crypto_dashboard_panel
+    ports:
+      - "192.168.1.76:5006:5006"  # IP spécifique comme avant
+    environment:
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_ROOT_USER=cryptoviz
+      - MINIO_ROOT_PASSWORD=cryptoviz2024
+      - MINIO_BUCKET=crypto-data-partitioned
+    depends_on:
+      - minio
+    networks:
+      - crypto-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://192.168.1.76:5006"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  crypto-net:
+    driver: bridge

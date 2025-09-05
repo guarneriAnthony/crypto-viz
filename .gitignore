@@ -125,3 +125,8 @@ data/temp/
 WARP.md
 .warp/
 
+
+# 📦 MinIO Data
+minio-data/
+minio-data-*/
+*.parquet

@@ -33,7 +33,6 @@ services:
     container_name: crypto_scraper
     environment:
       - REDPANDA_BROKERS=redpanda:9092
-      - COINMARKETCAP_API_KEY=f6f6031f-2dd6-45c4-8b98-2df503c0efb2
     depends_on:
       redpanda:
         condition: service_healthy
@@ -96,7 +95,6 @@ services:
     environment:
       - SPARK_MASTER_URL=spark://spark-master:7077
       - REDPANDA_BROKERS=redpanda:9092
-      - COINMARKETCAP_API_KEY=f6f6031f-2dd6-45c4-8b98-2df503c0efb2
       - MINIO_ENDPOINT=http://minio:9000
       - MINIO_ACCESS_KEY=cryptoviz
       - MINIO_SECRET_KEY=cryptoviz2024
@@ -135,26 +133,12 @@ services:
       - "5000:5000"
     environment:
       - REDPANDA_BROKERS=redpanda:9092
-      - COINMARKETCAP_API_KEY=f6f6031f-2dd6-45c4-8b98-2df503c0efb2
     depends_on:
       redpanda:
         condition: service_healthy
     networks:
       - crypto-net
 
-
-# Redpanda Console UI
-redpanda-console:
-  image: redpandadata/console:latest
-  container_name: crypto_redpanda_ui
-  ports:
-    - "8090:8080"
-  environment:
-    - KAFKA_BROKERS=redpanda:9092
-  depends_on:
-    - redpanda
-  networks:
-    - crypto-net
 volumes:
   minio_data:
   redpanda_data:

@@ -142,19 +142,6 @@ services:
     networks:
       - crypto-net
 
-
-# Redpanda Console UI
-redpanda-console:
-  image: redpandadata/console:latest
-  container_name: crypto_redpanda_ui
-  ports:
-    - "8090:8080"
-  environment:
-    - KAFKA_BROKERS=redpanda:9092
-  depends_on:
-    - redpanda
-  networks:
-    - crypto-net
 volumes:
   minio_data:
   redpanda_data:

@@ -213,7 +213,7 @@ def main():
             print(f"❌ ERREUR CYCLE {cycle}: {e}", flush=True)
         
         # Attente entre cycles
-        wait_time = 60  # 1 minutes
+        wait_time = 120  # 2 minutes
         next_time = time.strftime('%H:%M:%S', time.localtime(time.time() + wait_time))
         print(f"⏳ Pause {wait_time//60}min... (prochain: {next_time})", flush=True)
         time.sleep(wait_time)

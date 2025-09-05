@@ -15,54 +15,52 @@ class CryptoSparkStreaming:
         self.setup_minio_buckets()
         
     def create_spark_session(self):
-        """Créer session Spark avec JAR Kafka"""
+        """Créer ou récupérer la session Spark avec gestion intelligente"""
         try:
             from pyspark.sql import SparkSession
             
-            # Tenter session existante
+            # Tenter de récupérer une session existante
             try:
                 existing_session = SparkSession.getActiveSession()
                 if existing_session is not None:
                     print("✅ Utilisation session Spark existante")
                     return existing_session
             except Exception as e:
-                print(f"📡 Création nouvelle session: {e}")
+                print(f"📡 Pas de session active existante: {e}")
             
-            print("🚀 Création session Spark avec JAR Kafka...")
+            # Créer une nouvelle session si nécessaire
+            print("🚀 Création nouvelle session Spark...")
             spark = SparkSession.builder \
-                .appName("CryptoViz-V3-Partitioned") \
+                .appName("CryptoViz-V3-Streaming") \
                 .config("spark.sql.adaptive.enabled", "true") \
                 .config("spark.sql.adaptive.coalescePartitions.enabled", "true") \
-                .config("spark.sql.streaming.checkpointLocation", "/tmp/checkpoint-v2") \
+                .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer") \
+                .config("spark.sql.streaming.checkpointLocation", "/tmp/checkpoint") \
                 .config("spark.hadoop.fs.s3a.endpoint", os.getenv("MINIO_ENDPOINT", "http://minio:9000")) \
-                .config("spark.hadoop.fs.s3a.access.key", os.getenv("MINIO_ACCESS_KEY", "cryptoviz")) \
-                .config("spark.hadoop.fs.s3a.secret.key", os.getenv("MINIO_SECRET_KEY", "cryptoviz2024")) \
+                .config("spark.hadoop.fs.s3a.access.key", os.getenv("MINIO_ACCESS_KEY", "minioadmin")) \
+                .config("spark.hadoop.fs.s3a.secret.key", os.getenv("MINIO_SECRET_KEY", "minioadmin")) \
                 .config("spark.hadoop.fs.s3a.path.style.access", "true") \
                 .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
-                .config("spark.jars.packages", 
-                       "org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.1,"
-                       "org.apache.hadoop:hadoop-aws:3.3.4,"
-                       "com.amazonaws:aws-java-sdk-bundle:1.12.262") \
                 .getOrCreate()
             
             return spark
             
         except Exception as e:
-            print(f"❌ Erreur session Spark: {e}")
+            print(f"❌ Erreur création session Spark: {e}")
             raise
 
     def setup_minio_buckets(self):
-        """Créer les buckets nécessaires"""
+        """Setup MinIO buckets avec nouvelle structure"""
         import boto3
         try:
             s3_client = boto3.client(
                 's3',
                 endpoint_url=os.getenv("MINIO_ENDPOINT", "http://minio:9000"),
-                aws_access_key_id=os.getenv("MINIO_ACCESS_KEY", "cryptoviz"),
-                aws_secret_access_key=os.getenv("MINIO_SECRET_KEY", "cryptoviz2024")
+                aws_access_key_id=os.getenv("MINIO_ACCESS_KEY", "minioadmin"),
+                aws_secret_access_key=os.getenv("MINIO_SECRET_KEY", "minioadmin")
             )
             
-            buckets = ["crypto-data-partitioned"]
+            buckets = ["crypto-raw-partitioned", "crypto-raw"]
             for bucket in buckets:
                 try:
                     s3_client.create_bucket(Bucket=bucket)
@@ -77,102 +75,125 @@ class CryptoSparkStreaming:
             print(f"❌ Erreur setup MinIO: {e}")
 
     def process_crypto_stream(self):
-        """Stream Kafka → Parquet partitionné Y/M/D"""
+        """Process crypto stream avec partitioning par année/mois/jour"""
         
+        # Schema Kafka
         crypto_schema = StructType([
-            StructField("name", StringType(), True),
+            StructField("timestamp", StringType(), True),
             StructField("symbol", StringType(), True),
-            StructField("price", DoubleType(), True),
+            StructField("price_usd", DoubleType(), True),
             StructField("market_cap", DoubleType(), True),
             StructField("volume_24h", DoubleType(), True),
-            StructField("change_1h", DoubleType(), True),
-            StructField("change_24h", DoubleType(), True),
-            StructField("change_7d", DoubleType(), True),
-            StructField("source", StringType(), True),
-            StructField("timestamp", StringType(), True),
-            StructField("ingestion_timestamp", StringType(), True)
+            StructField("percent_change_24h", DoubleType(), True),
+            StructField("source", StringType(), True)
         ])
         
-        print("📡 Configuration stream Kafka → Parquet Y/M/D")
+        print("📡 Configuration Kafka streaming...")
         
-        # Lecture Kafka
+        # Lecture du stream Kafka
         kafka_df = self.spark \
             .readStream \
             .format("kafka") \
-            .option("kafka.bootstrap.servers", os.getenv("REDPANDA_BROKERS", "redpanda:9092")) \
-            .option("subscribe", "crypto-raw-data") \
+            .option("kafka.bootstrap.servers", os.getenv("KAFKA_SERVERS", "redpanda:9092")) \
+            .option("subscribe", "crypto_data") \
             .option("startingOffsets", "latest") \
             .load()
         
-        # Parse JSON + ajout colonnes partitioning
+        # Parse JSON depuis Kafka
         parsed_df = kafka_df.select(
             from_json(col("value").cast("string"), crypto_schema).alias("data"),
             col("timestamp").alias("kafka_timestamp")
         ).select("data.*", "kafka_timestamp")
         
-        # Ajout partitioning Y/M/D
+        # Ajout des colonnes de partitioning
         enriched_df = parsed_df \
-            .withColumn("timestamp_dt", coalesce(to_timestamp(col("ingestion_timestamp"), "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"), current_timestamp())) \
-            .withColumn("year", year(col("timestamp_dt"))) \
-            .withColumn("month", month(col("timestamp_dt"))) \
-            .withColumn("day", dayofmonth(col("timestamp_dt")))
+            .withColumn("parsed_timestamp", to_timestamp(col("timestamp"))) \
+            .withColumn("year", year(col("parsed_timestamp"))) \
+            .withColumn("month", month(col("parsed_timestamp"))) \
+            .withColumn("day", dayofmonth(col("parsed_timestamp")))
         
-        print("🚀 Démarrage streaming avec partitioning Y/M/D vers crypto-data-partitioned")
+        print("🚀 Démarrage streaming avec partitioning Y/M/D...")
         
-        # ÉCRITURE UNIQUE avec partitioning
+        # Écriture avec partitioning
         stream = enriched_df.writeStream \
             .outputMode("append") \
-            .trigger(processingTime='60 seconds') \
-            .foreachBatch(self.write_partitioned_batch) \
-            .option("checkpointLocation", "/tmp/checkpoint-partitioned-v2") \
+            .format("parquet") \
+            .option("path", "s3a://crypto-raw-partitioned/") \
+            .partitionBy("year", "month", "day") \
+            .option("checkpointLocation", "/tmp/checkpoint-partitioned") \
+            .trigger(processingTime='120 seconds') \
+            .foreachBatch(self.process_partitioned_batch) \
             .start()
         
         return stream
 
-    def write_partitioned_batch(self, batch_df, batch_id):
-        """Écriture partitionnée Y/M/D dans crypto-data-partitioned"""
+    def process_partitioned_batch(self, batch_df, batch_id):
+        """Process chaque batch avec logging et partitioning"""
         try:
             if batch_df.count() > 0:
                 print(f"📊 Batch {batch_id}: {batch_df.count()} records")
                 
-                # Afficher partitions
+                # Afficher les partitions détectées
                 partitions = batch_df.select("year", "month", "day").distinct().collect()
                 for p in partitions:
                     print(f"   📁 Partition: {p.year}/{p.month:02d}/{p.day:02d}")
                 
-                # ÉCRITURE UNIQUE avec partitioning Y/M/D
+                # Écriture avec partitioning
                 batch_df.write \
                     .mode("append") \
+                    .format("parquet") \
                     .partitionBy("year", "month", "day") \
-                    .option("compression", "snappy") \
-                    .parquet("s3a://crypto-data-partitioned/")
+                    .save("s3a://crypto-raw-partitioned/")
                 
-                print(f"✅ Batch {batch_id} écrit avec partitioning Y/M/D")
+                print(f"✅ Batch {batch_id} écrit avec succès")
             else:
                 print(f"📭 Batch {batch_id}: aucun record")
                 
         except Exception as e:
             print(f"❌ Erreur batch {batch_id}: {e}")
 
+    def compact_daily_partitions(self):
+        """Compactage optionnel des partitions journalières"""
+        try:
+            print("🔧 Démarrage compactage partitions...")
+            
+            # Lire les données existantes
+            df = self.spark.read.parquet("s3a://crypto-raw-partitioned/")
+            
+            # Réécriture pour optimisation
+            df.write \
+                .mode("overwrite") \
+                .format("parquet") \
+                .partitionBy("year", "month", "day") \
+                .option("maxRecordsPerFile", 100000) \
+                .save("s3a://crypto-raw-partitioned-compacted/")
+                
+            print("✅ Compactage terminé")
+            
+        except Exception as e:
+            print(f"❌ Erreur compactage: {e}")
+
     def run(self):
         """Lancer le streaming"""
-        print("🚀 CryptoViz V3 - Streaming Partitionné Y/M/D")
+        print("🚀 CryptoViz V3 - Spark Streaming avec partitioning Y/M/D")
         
         try:
+            # Démarrage du stream
             stream = self.process_crypto_stream()
-            print("⏳ Streaming actif...")
+            
+            print("⏳ Streaming actif... (Ctrl+C pour arrêter)")
             stream.awaitTermination()
             
         except KeyboardInterrupt:
-            print("\n🛑 Arrêt demandé")
+            print("\n🛑 Arrêt demandé par utilisateur")
         except Exception as e:
             print(f"❌ Erreur streaming: {e}")
         finally:
-            print("🔚 Fermeture session")
+            print("🔚 Fermeture Spark session")
             self.spark.stop()
 
 def main():
-    print("🚀 Starting Partitioned Spark Streaming...")
+    print("🚀 Starting Spark Streaming Consumer...")
     pipeline = CryptoSparkStreaming()
     pipeline.run()
 

@@ -112,7 +112,7 @@ class CryptoSparkStreaming:
         
         # Ajout partitioning Y/M/D
         enriched_df = parsed_df \
-            .withColumn("timestamp_dt", coalesce(to_timestamp(col("ingestion_timestamp"), "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"), current_timestamp())) \
+            .withColumn("timestamp_dt", to_timestamp(col("ingestion_timestamp"))) \
             .withColumn("year", year(col("timestamp_dt"))) \
             .withColumn("month", month(col("timestamp_dt"))) \
             .withColumn("day", dayofmonth(col("timestamp_dt")))

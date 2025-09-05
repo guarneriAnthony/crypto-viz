@@ -25,5 +25,5 @@ ENV BOKEH_ALLOW_WEBSOCKET_ORIGIN=*
 # Exposition du port
 EXPOSE 5006
 
-# COMMANDE SIMPLE QUI FONCTIONNAIT
-CMD ["python", "simple_app.py"]
+# DASHBOARD STREAMING KAFKA
+CMD ["python", "kafka_streaming_dashboard.py"]

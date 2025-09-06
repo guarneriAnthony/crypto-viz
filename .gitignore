@@ -127,6 +127,7 @@ WARP.md
 
 
 # 📦 MinIO Data
+minio/
 minio-data/
 minio-data-*/
 *.parquet

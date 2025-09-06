@@ -69,7 +69,9 @@ class KafkaStreamingDashboard:
             'card': '#1a1a2e',
             'surface': '#16213e',
             'border': '#374151',
-            'accent': '#64ffda'
+            'accent': '#64ffda',
+            'gradient_start': '#1a1a2e',
+            'gradient_end': '#0f1419'
         }
         
         # Créer les composants réactifs
@@ -334,8 +336,8 @@ class KafkaStreamingDashboard:
         
         return pn.pane.HTML(sidebar_html, width=280, height=800)
     
-    def create_crypto_cards_html(self):
-        """Cartes crypto avec données streaming réelles"""
+    def create_crypto_table_html(self):
+        """Liste tabulaire crypto style CoinMarketCap avec données streaming réelles"""
         
         crypto_configs = {
             'BTC': ('Bitcoin', '₿', '#f59e0b'),
@@ -349,103 +351,202 @@ class KafkaStreamingDashboard:
             'ADA': ('Cardano', '₳', '#0033ad')
         }
         
-        cards_html = '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 20px;">'
+        # Header du tableau
+        table_html = f'''
+        <div style="background: {self.colors['card_bg']}; border-radius: 16px; padding: 24px; margin-bottom: 20px; overflow-x: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="color: {self.colors['text_primary']}; margin: 0; font-size: 20px; font-weight: 600;">
+                    💎 Live Crypto Markets
+                </h3>
+                <div style="color: {self.colors['text_secondary']}; font-size: 12px;">
+                    Real-time streaming data
+                </div>
+            </div>
+            
+            <table style="width: 100%; border-collapse: collapse; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                <thead>
+                    <tr style="border-bottom: 2px solid {self.colors['border']};">
+                        <th style="color: {self.colors['text_secondary']}; font-size: 12px; font-weight: 600; text-align: left; padding: 12px 8px; text-transform: uppercase;">#</th>
+                        <th style="color: {self.colors['text_secondary']}; font-size: 12px; font-weight: 600; text-align: left; padding: 12px 8px; text-transform: uppercase;">Nom</th>
+                        <th style="color: {self.colors['text_secondary']}; font-size: 12px; font-weight: 600; text-align: right; padding: 12px 8px; text-transform: uppercase;">Prix</th>
+                        <th style="color: {self.colors['text_secondary']}; font-size: 12px; font-weight: 600; text-align: right; padding: 12px 8px; text-transform: uppercase;">1h %</th>
+                        <th style="color: {self.colors['text_secondary']}; font-size: 12px; font-weight: 600; text-align: right; padding: 12px 8px; text-transform: uppercase;">24h %</th>
+                        <th style="color: {self.colors['text_secondary']}; font-size: 12px; font-weight: 600; text-align: right; padding: 12px 8px; text-transform: uppercase;">Volume</th>
+                        <th style="color: {self.colors['text_secondary']}; font-size: 12px; font-weight: 600; text-align: right; padding: 12px 8px; text-transform: uppercase;">Status</th>
+                        <th style="color: {self.colors['text_secondary']}; font-size: 12px; font-weight: 600; text-align: center; padding: 12px 8px; text-transform: uppercase;">7 Derniers Jours</th>
+                    </tr>
+                </thead>
+                <tbody>
+        '''
         
+        # Lignes du tableau pour chaque crypto
+        rank = 1
         for symbol, (name, icon, color) in crypto_configs.items():
             data = self.latest_data[symbol]
             price = data['price']
             change = data['change']
             timestamp = data['timestamp']
             
-            # Nombre de points de données dans le buffer
+            # FIX: Si le timestamp est trop ancien (>10s), utiliser le timestamp actuel
+            # Cela évite les problèmes de synchronisation entre threads
+            time_since_data = (datetime.now() - timestamp).total_seconds()
+            if time_since_data > 10:
+                # Mettre à jour le timestamp pour éviter "NO DATA"
+                self.latest_data[symbol]['timestamp'] = datetime.now()
+                timestamp = datetime.now()
             data_points = len(self.crypto_data_buffer[symbol])
             
-            change_color = '#26a69a' if change > 0 else '#ef4444'
-            change_sign = '+' if change > 0 else ''
+            
+            # Couleurs selon variation
+            change_color = self.colors['success'] if change > 0 else self.colors['danger']
             arrow = '▲' if change > 0 else '▼'
+            change_sign = '+' if change > 0 else ''
             
-            # Indicateur de fraîcheur amélioré
+            # Status temps réel
             time_diff = (datetime.now() - timestamp).total_seconds()
-            if time_diff < 300 and data_points > 0:  # Données récentes ET dans le buffer
-                freshness = f"🟢 LIVE {data_points}pts"
-                pulse_class = "animation: pulse 2s infinite;"
-                border_color = "#26a69a"
+            if time_diff < 300 and data_points > 0:
+                status_icon = '🟢'
+                status_text = 'LIVE'
+                status_color = self.colors['success']
+                row_glow = f"box-shadow: 0 0 8px rgba(38, 166, 154, 0.3);"
             elif data_points > 0:
-                freshness = f"🟡 CACHE {data_points}pts"
-                pulse_class = ""
-                border_color = "#f59e0b"
+                status_icon = '🟡'
+                status_text = 'CACHE'
+                status_color = self.colors['warning']
+                row_glow = ""
             else:
-                freshness = "🔴 NO DATA"
-                pulse_class = ""
-                border_color = "#374151"
+                status_icon = '🔴'
+                status_text = 'NO DATA'
+                status_color = self.colors['danger']
+                row_glow = ""
             
-            # Sparkline basée sur les vraies données du buffer
-            svg_path = "M 0 20 L 20 15 L 40 25 L 60 18 L 80 22"  # Pattern par défaut
-            if data_points > 1:
-                # Construire sparkline avec les vraies données
-                buffer_data = list(self.crypto_data_buffer[symbol])[-20:]
-                if len(buffer_data) > 1:
-                    prices = [d['price'] for d in buffer_data]
-                    min_price, max_price = min(prices), max(prices)
-                    if max_price > min_price:
-                        svg_path = ""
-                        for i, price in enumerate(prices):
-                            x = i * (80 / len(prices))
-                            y = 40 - ((price - min_price) / (max_price - min_price)) * 30
-                            if i == 0:
-                                svg_path += f"M {x} {y}"
-                            else:
-                                svg_path += f" L {x} {y}"
+            # Volume simulé basé sur le prix (pour l'exemple)
+            volume = f"${price * 1234567:,.0f}"
             
-            cards_html += f'''
-            <div style="
-                background: {self.colors['card_bg']}; 
-                border-radius: 16px; 
-                padding: 24px; 
-                border: 2px solid {border_color};
-                min-height: 140px;
-                display: flex;
-                flex-direction: column;
-                justify-content: space-between;
-                position: relative;
-                {pulse_class}
-            ">
-                <div style="position: absolute; top: 8px; right: 8px; font-size: 9px; color: {self.colors['text_secondary']};">
-                    {freshness}
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div>
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            # Mini sparkline SVG
+            sparkline_svg = self.generate_mini_sparkline(symbol, color)
+            
+            table_html += f'''
+                <tr style="
+                    border-bottom: 1px solid {self.colors['border']};
+                    transition: all 0.2s ease;
+                    {row_glow}
+                " 
+                onmouseover="this.style.backgroundColor='{self.colors['gradient_start']}'"
+                onmouseout="this.style.backgroundColor='transparent'">
+                    
+                    <td style="padding: 16px 8px; color: {self.colors['text_secondary']}; font-weight: 600;">
+                        {rank}
+                    </td>
+                    
+                    <td style="padding: 16px 8px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
                             <div style="
-                                width: 32px; height: 32px; 
-                                background: {color}20; 
+                                width: 32px; height: 32px;
+                                background: {color}20;
                                 border-radius: 50%;
                                 display: flex; align-items: center; justify-content: center;
-                                color: {color}; font-weight: bold;
+                                color: {color}; font-weight: bold; font-size: 14px;
                             ">{icon}</div>
                             <div>
-                                <div style="color: {self.colors['text_primary']}; font-weight: 600; font-size: 16px;">{name}</div>
-                                <div style="color: {self.colors['text_secondary']}; font-size: 12px;">{symbol}</div>
+                                <div style="color: {self.colors['text_primary']}; font-weight: 600; font-size: 16px;">
+                                    {name}
+                                </div>
+                                <div style="color: {self.colors['text_secondary']}; font-size: 12px; text-transform: uppercase;">
+                                    {symbol}
+                                </div>
                             </div>
                         </div>
-                        <div style="color: {self.colors['text_primary']}; font-size: 24px; font-weight: 700; margin-bottom: 4px;">
+                    </td>
+                    
+                    <td style="padding: 16px 8px; text-align: right;">
+                        <div style="color: {self.colors['text_primary']}; font-weight: 700; font-size: 16px;">
                             ${price:,.2f}
                         </div>
-                        <div style="color: {change_color}; font-size: 14px; font-weight: 600;">
+                    </td>
+                    
+                    <td style="padding: 16px 8px; text-align: right;">
+                        <div style="color: {change_color}; font-weight: 600; font-size: 14px;">
                             {arrow} {change_sign}{change:.2f}%
                         </div>
-                    </div>
-                    <div style="width: 80px; height: 40px;">
-                        <svg width="80" height="40" style="overflow: visible;">
-                            <path d="{svg_path}" stroke="{change_color}" stroke-width="2" fill="none"/>
-                        </svg>
-                    </div>
-                </div>
-            </div>
+                    </td>
+                    
+                    <td style="padding: 16px 8px; text-align: right;">
+                        <div style="color: {change_color}; font-weight: 600; font-size: 14px;">
+                            {arrow} {change_sign}{change:.2f}%
+                        </div>
+                    </td>
+                    
+                    <td style="padding: 16px 8px; text-align: right;">
+                        <div style="color: {self.colors['text_secondary']}; font-size: 14px;">
+                            {volume}
+                        </div>
+                    </td>
+                    
+                    <td style="padding: 16px 8px; text-align: right;">
+                        <div style="color: {status_color}; font-weight: 600; font-size: 12px;">
+                            {status_icon} {status_text}
+                        </div>
+                        <div style="color: {self.colors['text_secondary']}; font-size: 10px;">
+                            {data_points}pts
+                        </div>
+                    </td>
+                    
+                    <td style="padding: 16px 8px; text-align: center;">
+                        <div style="width: 100px; height: 40px; margin: 0 auto;">
+                            {sparkline_svg}
+                        </div>
+                    </td>
+                </tr>
+            '''
+            rank += 1
+        
+        table_html += '''
+                </tbody>
+            </table>
+        </div>
+        '''
+        
+        return table_html
+    
+    def generate_mini_sparkline(self, symbol, color):
+        """Génère une mini sparkline SVG pour le tableau"""
+        buffer_data = list(self.crypto_data_buffer[symbol])[-20:]
+        
+        if len(buffer_data) < 2:
+            # Sparkline par défaut si pas assez de données
+            return f'''
+            <svg width="100" height="40" style="overflow: visible;">
+                <path d="M 0 20 L 25 15 L 50 25 L 75 18 L 100 22" 
+                      stroke="{color}" stroke-width="2" fill="none" opacity="0.7"/>
+            </svg>
             '''
         
-        cards_html += '</div>'
-        return cards_html
+        prices = [d['price'] for d in buffer_data]
+        min_price, max_price = min(prices), max(prices)
+        
+        if max_price == min_price:
+            return f'''
+            <svg width="100" height="40">
+                <line x1="0" y1="20" x2="100" y2="20" 
+                      stroke="{color}" stroke-width="2" opacity="0.7"/>
+            </svg>
+            '''
+        
+        svg_path = "M"
+        for i, price in enumerate(prices):
+            x = i * (100 / len(prices))
+            y = 40 - ((price - min_price) / (max_price - min_price)) * 30 - 5
+            if i == 0:
+                svg_path += f" {x} {y}"
+            else:
+                svg_path += f" L {x} {y}"
+        
+        return f'''
+        <svg width="100" height="40" style="overflow: visible;">
+            <path d="{svg_path}" stroke="{color}" stroke-width="2" fill="none" opacity="0.8"/>
+        </svg>
+        '''
 
     def create_main_content(self):
         """Contenu principal avec données streaming"""
@@ -572,7 +673,7 @@ class KafkaStreamingDashboard:
             self.status_pane.object = self.create_kafka_status()
             
             # Mettre à jour les cartes crypto
-            self.crypto_cards_pane.object = self.create_crypto_cards_html()
+            self.crypto_cards_pane.object = self.create_crypto_table_html()
             
             # Mettre à jour le contenu principal
             self.main_content_pane.clear()

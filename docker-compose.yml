@@ -152,6 +152,26 @@ services:
       timeout: 10s
       retries: 3
 
+
+  # Dashboard moderne v2 (en développement)
+  crypto-dashboard-modern:
+    build: 
+      context: ./dashboard-panel
+      dockerfile: Dockerfile.modern
+    container_name: crypto_dashboard_modern
+    ports:
+      - "192.168.1.76:5007:5007"
+    environment:
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_ROOT_USER=cryptoviz
+      - MINIO_ROOT_PASSWORD=cryptoviz2024
+      - MINIO_BUCKET=crypto-data-partitioned
+    depends_on:
+      - minio
+    networks:
+      - crypto-net
+    restart: unless-stopped
+
 networks:
   crypto-net:
     driver: bridge

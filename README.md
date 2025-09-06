@@ -58,7 +58,7 @@ cp .env.example .env
 ### 2. Lancement Pipeline Complet
 ```bash
 # Démarrage complet (tous services)
-docker-compose -f docker-compose-v3-final.yml up -d
+docker-compose -f docker-compose.yml up -d
 
 # Vérification état services
 docker ps --filter network=crypto-viz_crypto-net
@@ -162,7 +162,7 @@ docker exec crypto_redpanda rpk topic consume crypto-raw-data --num 5
 docker exec crypto_minio mc ls local/
 
 # Restart services
-docker-compose -f docker-compose-v3-final.yml restart spark-streaming
+docker-compose -f docker-compose.yml restart spark-streaming
 ```
 
 ## 📈 Métriques & Performance

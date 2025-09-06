@@ -32,8 +32,8 @@ class RedpandaCryptoProducer:
         }
         
         print("✅ Redpanda Producer initialisé", flush=True)
-        print(f"📡 Brokers: {brokers}", flush=True)
-        print(f"📊 Topics: {list(self.topics.values())}", flush=True)
+        print(f" Brokers: {brokers}", flush=True)
+        print(f" Topics: {list(self.topics.values())}", flush=True)
 
     def create_topics_if_needed(self):
         """Crée les topics s'ils n'existent pas"""
@@ -63,7 +63,7 @@ class RedpandaCryptoProducer:
             print("⚠️ Aucune donnée à publier", flush=True)
             return
 
-        print(f"📡 Publication de {len(crypto_data)} éléments vers Redpanda...", flush=True)
+        print(f" Publication de {len(crypto_data)} éléments vers Redpanda...", flush=True)
         
         # Statistiques
         sent_count = {'raw': 0, 'streaming': 0}
@@ -107,7 +107,7 @@ class RedpandaCryptoProducer:
                 source = item.get('source', 'unknown')
                 source_counts[source] = source_counts.get(source, 0) + 1
                 
-                print(f"📡 {item['name']} ({source}): Raw ✅ | Streaming ✅", flush=True)
+                print(f" {item['name']} ({source}): Raw ✅ | Streaming ✅", flush=True)
                 
             except KafkaError as e:
                 print(f"❌ Erreur Kafka pour {item['name']}: {e}", flush=True)
@@ -119,9 +119,9 @@ class RedpandaCryptoProducer:
         
         # Afficher les statistiques finales
         print(f"\n✅ Publication Redpanda terminée:")
-        print(f"   📊 Topic raw-data: {sent_count['raw']} messages")
-        print(f"   📡 Topic streaming: {sent_count['streaming']} messages")
-        print(f"   📈 Par source:")
+        print(f"    Topic raw-data: {sent_count['raw']} messages")
+        print(f"    Topic streaming: {sent_count['streaming']} messages")
+        print(f"    Par source:")
         for source, count in source_counts.items():
             print(f"      • {source}: {count} cryptos")
         print()
@@ -152,7 +152,7 @@ def get_crypto_data_from_providers():
     # Récupérer les données de chaque provider
     for provider in providers:
         try:
-            print(f"\n🔄 Récupération depuis {provider.name}...", flush=True)
+            print(f"\n Récupération depuis {provider.name}...", flush=True)
             
             crypto_data = provider.get_crypto_data()
             
@@ -173,12 +173,12 @@ def get_crypto_data_from_providers():
             print(f"❌ Erreur avec {provider.name}: {e}", flush=True)
             continue
     
-    print(f"\n📊 TOTAL: {len(all_crypto_data)} cryptos de tous les providers", flush=True)
+    print(f"\n TOTAL: {len(all_crypto_data)} cryptos de tous les providers", flush=True)
     return all_crypto_data
 
 def main():
     """Boucle principale avec Redpanda Producer"""
-    print("🚀 Scraper CryptoViz Multi-Provider avec Redpanda démarré...", flush=True)
+    print(" Scraper CryptoViz Multi-Provider avec Redpanda démarré...", flush=True)
     
     # Initialiser le producer Redpanda
     producer = RedpandaCryptoProducer()
@@ -195,7 +195,7 @@ def main():
     while True:
         cycle += 1
         print(f"\n{'='*70}", flush=True)
-        print(f"🔄 CYCLE {cycle} - {time.strftime('%Y-%m-%d %H:%M:%S')}", flush=True)
+        print(f" CYCLE {cycle} - {time.strftime('%Y-%m-%d %H:%M:%S')}", flush=True)
         print(f"{'='*70}", flush=True)
         
         try:

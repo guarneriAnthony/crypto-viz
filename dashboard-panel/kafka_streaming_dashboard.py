@@ -27,47 +27,26 @@ class KafkaStreamingDashboard:
         self.crypto_data_buffer = {
             'BTC': deque(maxlen=100),
             'ETH': deque(maxlen=100),
+            'TRX': deque(maxlen=100),
             'SOL': deque(maxlen=100),
             'USDT': deque(maxlen=100),
             'XRP': deque(maxlen=100),
             'BNB': deque(maxlen=100),
             'DOGE': deque(maxlen=100),
-            'ADA': deque(maxlen=100),
-            'TRX': deque(maxlen=100),
-            'LTC': deque(maxlen=100),
-            'MATIC': deque(maxlen=100),
-            'DOT': deque(maxlen=100),
-            'SHIB': deque(maxlen=100),
-            'AVAX': deque(maxlen=100),
-            'UNI': deque(maxlen=100),
-            'LINK': deque(maxlen=100),
-            'ATOM': deque(maxlen=100),
-            'TON': deque(maxlen=100),
-            'XLM': deque(maxlen=100)
+            'ADA': deque(maxlen=100)
         }
         
         # Dernières données pour affichage
         self.latest_data = {
             'BTC': {'price': 50000, 'change': 0, 'timestamp': datetime.now()},
             'ETH': {'price': 3000, 'change': 0, 'timestamp': datetime.now()},
-            'LTC': {'price': 150, 'change': 0, 'timestamp': datetime.now()},
+            'TRX': {'price': 0.08, 'change': 0, 'timestamp': datetime.now()},
             'SOL': {'price': 120, 'change': 0, 'timestamp': datetime.now()},
             'USDT': {'price': 1, 'change': 0, 'timestamp': datetime.now()},
             'XRP': {'price': 0.5, 'change': 0, 'timestamp': datetime.now()},
             'BNB': {'price': 300, 'change': 0, 'timestamp': datetime.now()},
             'DOGE': {'price': 0.1, 'change': 0, 'timestamp': datetime.now()},
-            'ADA': {'price': 0.4, 'change': 0, 'timestamp': datetime.now()},
-            'TRX': {'price': 0.08, 'change': 0, 'timestamp': datetime.now()},
-            'LTC': {'price': 70, 'change': 0, 'timestamp': datetime.now()},
-            'MATIC': {'price': 0.6, 'change': 0, 'timestamp': datetime.now()},
-            'DOT': {'price': 5, 'change': 0, 'timestamp': datetime.now()},
-            'SHIB': {'price': 0.00002, 'change': 0, 'timestamp': datetime.now()},
-            'AVAX': {'price': 25, 'change': 0, 'timestamp': datetime.now()},
-            'UNI': {'price': 8, 'change': 0, 'timestamp': datetime.now()},
-            'LINK': {'price': 12, 'change': 0, 'timestamp': datetime.now()},
-            'ATOM': {'price': 6, 'change': 0, 'timestamp': datetime.now()},
-            'TON': {'price': 5, 'change': 0, 'timestamp': datetime.now()},
-            'XLM': {'price': 0.1, 'change': 0, 'timestamp': datetime.now()}
+            'ADA': {'price': 0.4, 'change': 0, 'timestamp': datetime.now()}
         }
         
         # Status de connexion - FIX: Initialiser comme True
@@ -333,7 +312,7 @@ class KafkaStreamingDashboard:
         crypto_configs = {
             'BTC': ('Bitcoin', '₿', '#f59e0b'),
             'ETH': ('Ethereum', 'Ξ', '#3b82f6'),
-            'LTC': ('Litecoin', 'Ł', '#64748b'),
+            'TRX': ('TRON', 'T', '#64748b'),
             'SOL': ('Solana', '◎', '#22c55e')
         }
         
@@ -508,7 +487,7 @@ class KafkaStreamingDashboard:
         stats_html = ""
         total_points = 0
         
-        for symbol in ['BTC', 'ETH', 'LTC', 'SOL']:
+        for symbol in ['BTC', 'ETH', 'TRX', 'SOL']:
             count = len(self.crypto_data_buffer[symbol])
             total_points += count
             last_update = self.latest_data[symbol]['timestamp']

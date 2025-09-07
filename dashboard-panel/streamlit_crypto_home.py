@@ -116,7 +116,7 @@ with col1:
     </div>
     """, unsafe_allow_html=True)
     
-    if st.button("🚀 Ouvrir Dashboard Principal", use_container_width=True, type="primary"):
+    if st.button("🚀 Ouvrir Dashboard Principal", width="stretch", type="primary"):
         st.switch_page("pages/1_📊_Dashboard_Principal.py")
 
 with col2:
@@ -133,7 +133,7 @@ with col2:
     </div>
     """, unsafe_allow_html=True)
     
-    if st.button("🔮 Ouvrir ML Predictions", use_container_width=True, type="secondary"):
+    if st.button("🔮 Ouvrir ML Predictions", width="stretch", type="secondary"):
         st.switch_page("pages/2_🤖_ML_Predictions.py")
 
 # Architecture et informations

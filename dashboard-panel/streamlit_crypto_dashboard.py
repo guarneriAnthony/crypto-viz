@@ -148,6 +148,13 @@ if 'data_manager' not in st.session_state:
     else:
         st.session_state.data_manager = None
 
+# FORCE RESTART CONSUMER KAFKA si inactif pour données live
+if st.session_state.data_manager:
+    dm = st.session_state.data_manager
+    if not dm._kafka_consumer_active or len(dm._live_buffer) == 0:
+        dm._kafka_consumer_active = False
+        dm.start_kafka_consumer()
+
 if 'last_refresh' not in st.session_state:
     st.session_state.last_refresh = None
 

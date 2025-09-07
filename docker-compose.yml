@@ -156,7 +156,9 @@ services:
   # Dashboard moderne v2 (en développement)
   # Dashboard Streamlit hybride
   crypto-dashboard-streamlit:
-    image: crypto-viz-dashboard-with-redis
+    build:
+      context: ./dashboard-panel
+      dockerfile: Dockerfile.streamlit
     container_name: crypto_dashboard_streamlit
     ports:
       - "192.168.1.76:5008:5008"

@@ -21,12 +21,8 @@ RUN echo "numpy>=1.24.0" >> requirements.txt
 # Installation des dépendances Python
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copier l'application complète
-COPY streamlit_crypto_home.py .
-COPY streamlit_crypto_dashboard.py .
-COPY pages/ ./pages/
-COPY utils/ ./utils/
-COPY components/ ./components/
+# Copier TOUS les fichiers de l'application (solution définitive)
+COPY . .
 
 # Configuration Streamlit
 RUN mkdir -p ~/.streamlit/

@@ -1,3 +1,9 @@
+"""
+Dashboard Principal CryptoViz - Version Définitive avec Architecture Hybride
+Historique MinIO (filtré intelligemment) + Stream Kafka temps réel
+Gère automatiquement 7000+ fichiers Parquet sans surcharge
+"""
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -5,16 +11,22 @@ import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
 import time
-import json
-from kafka import KafkaConsumer
 from datetime import datetime, timedelta
-import threading
-from collections import deque, defaultdict
 import logging
+import sys
+import os
+
+# Import du data manager hybride
+try:
+    from utils.hybrid_data_manager import get_data_manager
+    DATA_MANAGER_AVAILABLE = True
+except ImportError as e:
+    st.error(f"❌ Hybrid Data Manager non disponible: {e}")
+    DATA_MANAGER_AVAILABLE = False
 
 # Configuration Streamlit
 st.set_page_config(
-    page_title="🚀 CryptoViz Live Dashboard",
+    page_title="🚀 CryptoViz Dashboard Hybride",
     page_icon="₿",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -24,587 +36,412 @@ st.set_page_config(
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# CSS pour styling professionnel
+# CSS pour interface moderne
 st.markdown("""
 <style>
-    .crypto-table {
-        background-color: #0E1117;
+    /* Header principal */
+    .main-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 20px;
+        border-radius: 12px;
+        color: white;
+        text-align: center;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    
+    /* Status cards */
+    .status-card {
+        background: white;
+        border-radius: 8px;
+        padding: 15px;
+        margin: 10px 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border-left: 4px solid #667eea;
+    }
+    
+    .status-card h4 {
+        color: #333;
+        margin: 0 0 10px 0;
+        font-size: 16px;
+    }
+    
+    .status-card p {
+        color: #666;
+        margin: 5px 0;
+        font-size: 14px;
+    }
+    
+    /* Métriques */
+    .metric-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin: 10px 0;
+    }
+    
+    .metric-value {
+        font-size: 32px;
+        font-weight: bold;
+        color: #667eea;
+        margin: 0;
+    }
+    
+    .metric-label {
+        font-size: 14px;
+        color: #666;
+        margin: 5px 0 0 0;
+    }
+    
+    /* Performance badges */
+    .perf-badge-good {
+        background: #28a745;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    
+    .perf-badge-warning {
+        background: #ffc107;
+        color: black;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    
+    .perf-badge-danger {
+        background: #dc3545;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    
+    /* Graphiques */
+    .chart-container {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    /* Tables */
+    .dataframe {
         border-radius: 8px;
         overflow: hidden;
-    }
-    
-    .crypto-row {
-        display: flex;
-        align-items: center;
-        padding: 12px 16px;
-        border-bottom: 1px solid #262730;
-        transition: background-color 0.2s;
-        cursor: pointer;
-    }
-    
-    .crypto-row:hover {
-        background-color: #262730;
-    }
-    
-    .crypto-rank {
-        width: 40px;
-        color: #8B949E;
-        font-size: 14px;
-    }
-    
-    .crypto-info {
-        display: flex;
-        align-items: center;
-        width: 200px;
-    }
-    
-    .crypto-logo {
-        width: 24px;
-        height: 24px;
-        margin-right: 8px;
-        border-radius: 50%;
-    }
-    
-    .crypto-name {
-        color: #F0F6FC;
-        font-weight: 600;
-        font-size: 14px;
-    }
-    
-    .crypto-symbol {
-        color: #8B949E;
-        font-size: 12px;
-        margin-left: 4px;
-    }
-    
-    .crypto-price {
-        width: 120px;
-        color: #F0F6FC;
-        font-weight: 600;
-        font-size: 14px;
-    }
-    
-    .crypto-change {
-        width: 80px;
-        font-weight: 600;
-        font-size: 13px;
-    }
-    
-    .positive {
-        color: #3FB68B;
-    }
-    
-    .negative {
-        color: #FF6B6B;
-    }
-    
-    .crypto-volume {
-        width: 120px;
-        color: #8B949E;
-        font-size: 13px;
-    }
-    
-    .crypto-market-cap {
-        width: 140px;
-        color: #8B949E;
-        font-size: 13px;
-    }
-    
-    .crypto-sparkline {
-        width: 120px;
-        height: 40px;
-    }
-    
-    .status-live {
-        color: #3FB68B;
-        font-size: 11px;
-        font-weight: 500;
-    }
-    
-    .status-loading {
-        color: #FFA726;
-        font-size: 11px;
-        font-weight: 500;
-    }
-    
-    .main-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-    }
-    
-    .table-header {
-        display: flex;
-        align-items: center;
-        padding: 12px 16px;
-        background-color: #161B22;
-        color: #8B949E;
-        font-size: 12px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 </style>
 """, unsafe_allow_html=True)
 
-class StreamlitCryptoDashboard:
-    def __init__(self):
-        self.kafka_broker = 'crypto_redpanda:9092'
-        self.raw_topic = 'crypto-raw-data'
-        
-        # Buffers pour les données (thread-safe avec des locks légers)
-        self.crypto_data = defaultdict(lambda: deque(maxlen=1000))
-        self.latest_prices = {}
-        self.latest_changes = {}
-        
-        # État de connexion
-        self.kafka_connected = False
-        self.last_update = None
-        self.message_count = 0
-        
-        # Initialiser avec des données par défaut
-        self.init_default_data()
-        
-        # Démarrer le consumer Kafka une seule fois
-        if not hasattr(st.session_state, 'kafka_started'):
-            self.setup_kafka_consumer()
-            st.session_state.kafka_started = True
-    
-    def init_default_data(self):
-        """Initialise avec des données par défaut"""
-        cryptos = ['BTC', 'ETH', 'USDT', 'XRP', 'BNB', 'SOL', 'DOGE', 'TRX', 'ADA']
-        default_prices = {
-            'BTC': 94016.04, 'ETH': 3647.18, 'USDT': 1.0, 'XRP': 2.83,
-            'BNB': 680.50, 'SOL': 203.45, 'DOGE': 0.22, 'TRX': 0.33, 'ADA': 0.83
-        }
-        
-        for symbol in cryptos:
-            self.latest_prices[symbol] = default_prices.get(symbol, 100)
-            self.latest_changes[symbol] = 0.0
-    
-    def setup_kafka_consumer(self):
-        """Démarre le consumer Kafka en arrière-plan"""
-        
-        def consume_kafka_data():
-            try:
-                consumer = KafkaConsumer(
-                    self.raw_topic,
-                    bootstrap_servers=[self.kafka_broker],
-                    value_deserializer=lambda x: json.loads(x.decode('utf-8')) if x else None,
-                    auto_offset_reset='latest',
-                    group_id=f'streamlit_crypto_{int(time.time())}'
-                )
-                
-                logger.info(f"📊 Connected to Kafka topic: {self.raw_topic}")
-                
-                for message in consumer:
-                    if message.value:
-                        symbol = message.value.get('symbol')
-                        price = float(message.value.get('price', 0))
-                        
-                        if symbol and price > 0:
-                            # Calculer le changement
-                            old_price = self.latest_prices.get(symbol, price)
-                            change_pct = ((price - old_price) / old_price * 100) if old_price > 0 else 0
-                            
-                            # Mettre à jour les données
-                            self.latest_prices[symbol] = price
-                            self.latest_changes[symbol] = change_pct
-                            
-                            # Ajouter aux données historiques
-                            self.crypto_data[symbol].append({
-                                'timestamp': datetime.now(),
-                                'price': price,
-                                'volume': float(message.value.get('volume', 0)),
-                                'market_cap': float(message.value.get('market_cap', 0)),
-                                'change_24h': float(message.value.get('percent_change_24h', 0))
-                            })
-                            
-                            # IMPORTANT: Mettre à jour l'état de connexion 
-                            self.last_update = datetime.now()
-                            self.kafka_connected = True
-                            self.message_count += 1
-                            
-                            # Stocker l'état dans session_state pour que Streamlit le voit
-                            self.kafka_connected = True
-                            
-                            
-                            
-                            if self.message_count % 10 == 0:
-                                logger.info(f"📈 Received {self.message_count} crypto updates")
-                            
-            except Exception as e:
-                logger.error(f"Error in Kafka consumer: {e}")
-                self.kafka_connected = False
-                self.kafka_connected = False
-        
-        # Démarrer le thread
-        threading.Thread(target=consume_kafka_data, daemon=True).start()
-    
-    def get_connection_status(self):
-        """Récupère le statut de connexion depuis session_state"""
-        connected = self.kafka_connected
-        last_update = self.last_update
-        message_count = self.message_count
-        
-        return connected, last_update, message_count
-    
-    def get_crypto_metrics(self):
-        """Récupère les métriques actuelles des cryptos"""
-        cryptos = ['BTC', 'ETH', 'USDT', 'XRP', 'BNB', 'SOL', 'DOGE', 'TRX', 'ADA']
-        metrics = []
-        
-        for symbol in cryptos:
-            price = self.latest_prices.get(symbol, 0)
-            change_pct = self.latest_changes.get(symbol, 0)
-            
-            # Données historiques récentes
-            hist_data = list(self.crypto_data[symbol])[-50:] if symbol in self.crypto_data else []
-            
-            # Volume et market cap depuis les dernières données
-            volume = hist_data[-1]['volume'] if hist_data else np.random.randint(10000000, 50000000000)
-            market_cap = hist_data[-1]['market_cap'] if hist_data else volume * price * 100
-            change_24h = hist_data[-1]['change_24h'] if hist_data else change_pct
-            
-            # Générer des changements aléatoires réalistes pour 1h et 7j
-            change_1h = np.random.uniform(-0.5, 0.5)
-            change_7d = np.random.uniform(-8, 12)
-            
-            metrics.append({
-                'symbol': symbol,
-                'name': self.get_crypto_name(symbol),
-                'price': price,
-                'change_1h': change_1h,
-                'change_24h': change_24h,
-                'change_7d': change_7d,
-                'volume': volume,
-                'market_cap': market_cap,
-                'data_points': len(hist_data),
-                'sparkline_data': [d['price'] for d in hist_data[-20:]] if hist_data else []
-            })
-        
-        return metrics
-    
-    def get_crypto_name(self, symbol):
-        names = {
-            'BTC': 'Bitcoin',
-            'ETH': 'Ethereum', 
-            'USDT': 'Tether',
-            'XRP': 'Ripple',
-            'BNB': 'Binance Coin',
-            'SOL': 'Solana',
-            'DOGE': 'Dogecoin',
-            'TRX': 'TRON',
-            'ADA': 'Cardano'
-        }
-        return names.get(symbol, symbol)
-    
-    def get_crypto_logo_url(self, symbol):
-        """Retourne l'URL du logo pour chaque crypto"""
-        logos = {
-            'BTC': 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png',
-            'ETH': 'https://assets.coingecko.com/coins/images/279/small/ethereum.png',
-            'USDT': 'https://assets.coingecko.com/coins/images/325/small/Tether.png',
-            'XRP': 'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png',
-            'BNB': 'https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png',
-            'SOL': 'https://assets.coingecko.com/coins/images/4128/small/solana.png',
-            'DOGE': 'https://assets.coingecko.com/coins/images/5/small/dogecoin.png',
-            'TRX': 'https://assets.coingecko.com/coins/images/1094/small/tron-logo.png',
-            'ADA': 'https://assets.coingecko.com/coins/images/975/small/cardano.png'
-        }
-        return logos.get(symbol, '')
-    
-    def create_sparkline(self, data, positive_trend=True):
-        """Crée un mini-graphique sparkline"""
-        if not data or len(data) < 2:
-            # Données simulées pour la démo
-            data = [100 + i + np.random.uniform(-2, 2) for i in range(20)]
-        
-        fig = go.Figure()
-        
-        color = '#3FB68B' if positive_trend else '#FF6B6B'
-        
-        fig.add_trace(go.Scatter(
-            y=data,
-            mode='lines',
-            line=dict(color=color, width=1.5),
-            fill='tonexty' if positive_trend else None,
-            fillcolor=f'rgba({59 if positive_trend else 255}, {182 if positive_trend else 107}, {139 if positive_trend else 107}, 0.1)',
-            showlegend=False,
-            hoverinfo='skip'
-        ))
-        
-        fig.update_layout(
-            showlegend=False,
-            height=40,
-            width=120,
-            margin=dict(l=0, r=0, t=0, b=0),
-            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)'
-        )
-        
-        return fig
-    
-    def format_number(self, num, is_currency=True, is_volume=False):
-        """Formate les nombres avec les bonnes unités"""
-        if num == 0:
-            return "N/A"
-            
-        if is_volume or num > 1e9:
-            if num >= 1e12:
-                return f"{'€' if is_currency else ''}{num/1e12:.1f}T"
-            elif num >= 1e9:
-                return f"{'€' if is_currency else ''}{num/1e9:.1f}B"
-            elif num >= 1e6:
-                return f"{'€' if is_currency else ''}{num/1e6:.1f}M"
-            else:
-                return f"{'€' if is_currency else ''}{num:,.0f}"
-        else:
-            if is_currency:
-                return f"€{num:,.2f}"
-            else:
-                return f"{num:,.2f}"
+# Variables globales pour cache
+if 'data_manager' not in st.session_state:
+    if DATA_MANAGER_AVAILABLE:
+        st.session_state.data_manager = get_data_manager()
+    else:
+        st.session_state.data_manager = None
 
-# Initialiser le dashboard dans session_state
-if 'dashboard' not in st.session_state:
-    st.session_state.dashboard = StreamlitCryptoDashboard()
-    
-if 'selected_crypto' not in st.session_state:
-    st.session_state.selected_crypto = None
-    
-dashboard = st.session_state.dashboard
+if 'last_refresh' not in st.session_state:
+    st.session_state.last_refresh = None
 
-# Pages du dashboard
-def main_page():
-    """Page principale avec le tableau des cryptos"""
+# Header principal
+st.markdown("""
+<div class="main-header">
+    <h1>🚀 CryptoViz Dashboard Hybride V4.0</h1>
+    <p>📊 Historique MinIO (Filtré) + ⚡ Stream Kafka Temps Réel</p>
+    <p style="font-size: 14px; opacity: 0.9;">Gestion intelligente de 7000+ fichiers Parquet</p>
+</div>
+""", unsafe_allow_html=True)
+
+# Sidebar - Contrôles
+with st.sidebar:
+    st.header("⚙️ Configuration Dashboard")
     
-    # Header principal
-    st.markdown('<div class="main-header">', unsafe_allow_html=True)
+    if not DATA_MANAGER_AVAILABLE:
+        st.error("❌ Data Manager non disponible")
+        st.stop()
     
-    col1, col2 = st.columns([3, 1])
+    # Status du data manager
+    status = st.session_state.data_manager.get_status()
     
-    with col1:
-        st.title("🚀 CryptoViz Live Dashboard")
-        st.markdown("*Données de cryptomonnaies en temps réel depuis Kafka*")
+    st.subheader("📊 Status Système")
     
-    with col2:
-        # Status en temps réel
-        kafka_connected, last_update, message_count = dashboard.get_connection_status()
-        
-        if kafka_connected and last_update:
-            time_diff = (datetime.now() - last_update).seconds
-            if time_diff < 60:
-                st.success(f"🟢 LIVE • {message_count} msgs")
-            else:
-                st.warning(f"🟡 Stale • {time_diff//60}min")
-        else:
-            st.error("🔴 Connexion...")
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Récupérer les données crypto
-    metrics = dashboard.get_crypto_metrics()
-    
-    # En-tête du tableau
-    st.markdown("""
-        <div class="table-header">
-            <div style="width: 40px;">#</div>
-            <div style="width: 200px;">Nom</div>
-            <div style="width: 120px;">Prix</div>
-            <div style="width: 80px;">1h %</div>
-            <div style="width: 80px;">24h %</div>
-            <div style="width: 80px;">7j %</div>
-            <div style="width: 140px;">Cap. Boursière</div>
-            <div style="width: 120px;">Volume (24h)</div>
-            <div style="width: 120px;">7 Derniers Jours</div>
-        </div>
+    # MinIO Status
+    minio_status = "🟢 Connecté" if status['minio_connected'] else "🔴 Déconnecté"
+    st.markdown(f"""
+    <div class="status-card">
+        <h4>🗄️ MinIO S3</h4>
+        <p>{minio_status}</p>
+        <p>Historique: {"✅ Chargé" if status['historical_loaded'] else "⏳ En attente"}</p>
+        <p>Points: {status['historical_count']:,}</p>
+    </div>
     """, unsafe_allow_html=True)
     
-    # Conteneur du tableau
-    st.markdown('<div class="crypto-table">', unsafe_allow_html=True)
+    # Kafka Status
+    kafka_status = "🟢 Actif" if status['kafka_active'] else "🔴 Inactif"
+    st.markdown(f"""
+    <div class="status-card">
+        <h4>📨 Kafka Stream</h4>
+        <p>{kafka_status}</p>
+        <p>Buffer: {status['live_buffer_count']} messages</p>
+    </div>
+    """, unsafe_allow_html=True)
     
-    # Générer les lignes du tableau
-    for idx, crypto in enumerate(metrics):
-        # Déterminer les couleurs des changements
-        color_1h = 'positive' if crypto['change_1h'] >= 0 else 'negative'
-        color_24h = 'positive' if crypto['change_24h'] >= 0 else 'negative'
-        color_7d = 'positive' if crypto['change_7d'] >= 0 else 'negative'
-        
-        # Status
-        status = "LIVE" if crypto['data_points'] > 0 else "CHARGEMENT"
-        status_class = "status-live" if crypto['data_points'] > 0 else "status-loading"
-        
-        # Créer la ligne cliquable
-        col1, col2, col3, col4, col5, col6, col7, col8, col9 = st.columns([0.5, 2.5, 1.5, 1, 1, 1, 1.8, 1.5, 1.5])
-        
-        with col1:
-            st.markdown(f"<div class='crypto-rank'>{idx + 1}</div>", unsafe_allow_html=True)
-            
-        with col2:
-            # Bouton crypto avec logo et nom
-            # Bouton crypto avec logo emoji selon le type
-            logo_emoji = "₿" if crypto["symbol"] == "BTC" else "🪙"
-            if st.button(f"{logo_emoji} {crypto['symbol']} {crypto['name']}", 
-                        key=f"crypto_{crypto['symbol']}", 
-                        help=f"Cliquez pour voir les détails de {crypto['name']}"):
-                st.session_state.selected_crypto = crypto["symbol"]
-                st.rerun()
-        with col3:
-            st.markdown(f"<div class='crypto-price'>{dashboard.format_number(crypto['price'])}</div>", 
-                       unsafe_allow_html=True)
-            
-        with col4:
-            st.markdown(f"<div class='crypto-change {color_1h}'>{crypto['change_1h']:+.2f}%</div>", 
-                       unsafe_allow_html=True)
-            
-        with col5:
-            st.markdown(f"<div class='crypto-change {color_24h}'>{crypto['change_24h']:+.2f}%</div>", 
-                       unsafe_allow_html=True)
-            
-        with col6:
-            st.markdown(f"<div class='crypto-change {color_7d}'>{crypto['change_7d']:+.2f}%</div>", 
-                       unsafe_allow_html=True)
-            
-        with col7:
-            st.markdown(f"<div class='crypto-market-cap'>{dashboard.format_number(crypto['market_cap'], is_volume=True)}</div>", 
-                       unsafe_allow_html=True)
-            
-        with col8:
-            st.markdown(f"<div class='crypto-volume'>{dashboard.format_number(crypto['volume'], is_volume=True)}</div>", 
-                       unsafe_allow_html=True)
-            
-        with col9:
-            # Mini sparkline
-            if crypto['sparkline_data']:
-                sparkline = dashboard.create_sparkline(crypto['sparkline_data'], crypto['change_7d'] >= 0)
-                st.plotly_chart(sparkline, use_container_width=True, config={'displayModeBar': False})
+    st.divider()
+    
+    # Contrôles historique
+    st.subheader("🔧 Configuration Historique")
+    
+    hours_back = st.slider("🕐 Heures d'historique", 6, 72, 24, 
+                          help="Plus de données = plus lent")
+    max_files = st.slider("📁 Max fichiers Parquet", 20, 300, 100, 
+                         help="Limite pour éviter surcharge")
+    
+    if st.button("🔄 Recharger Historique", use_container_width=True):
+        with st.spinner("🔍 Rechargement historique..."):
+            success = st.session_state.data_manager.refresh_historical(hours_back, max_files)
+            if success:
+                st.success("✅ Historique rechargé")
+                st.session_state.last_refresh = datetime.now()
             else:
-                st.markdown("<div style='height:40px;display:flex;align-items:center;color:#8B949E;font-size:11px;'>Chargement...</div>", unsafe_allow_html=True)
-        
-        # Ligne de séparation
-        if idx < len(metrics) - 1:
-            st.markdown("<hr style='margin: 0; border: 0; border-top: 1px solid #262730;'>", unsafe_allow_html=True)
+                st.error("❌ Erreur rechargement")
     
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.divider()
     
     # Auto-refresh
-    if st.sidebar.checkbox("🔄 Auto-refresh", value=False):
-        time.sleep(5)
+    auto_refresh = st.checkbox("🔄 Auto-refresh (15s)", value=True)
+    
+    if st.button("📊 Force Refresh Data", use_container_width=True):
         st.rerun()
+    
+    # Performance info
+    if st.session_state.last_refresh:
+        time_since = datetime.now() - st.session_state.last_refresh
+        st.caption(f"⏱️ Dernier refresh: {int(time_since.total_seconds())}s")
 
-def crypto_detail_page(symbol):
-    """Page détaillée pour une crypto spécifique"""
+# Main content
+# Récupération des données
+if st.session_state.data_manager:
+    start_time = time.time()
     
-    crypto_name = dashboard.get_crypto_name(symbol)
+    with st.spinner("🔍 Chargement données hybrides..."):
+        combined_data = st.session_state.data_manager.get_combined_data()
     
-    # Header avec bouton retour
-    col1, col2 = st.columns([1, 5])
+    load_time = time.time() - start_time
     
-    with col1:
-        if st.button("← Retour", key="back_button"):
-            st.session_state.selected_crypto = None
-            st.rerun()
-    
-    with col2:
-        st.title(f"📊 {symbol} • {crypto_name}")
-    
-    st.divider()
-    
-    # Métriques principales
-    metrics = dashboard.get_crypto_metrics()
-    crypto_data = next((c for c in metrics if c['symbol'] == symbol), None)
-    
-    if crypto_data:
+    if not combined_data.empty:
+        
+        # Header métriques
         col1, col2, col3, col4 = st.columns(4)
         
+        total_points = len(combined_data)
+        cryptos_count = combined_data['symbol'].nunique() if 'symbol' in combined_data.columns else 0
+        
+        # Calcul répartition sources
+        source_counts = combined_data['data_source'].value_counts() if 'data_source' in combined_data.columns else {}
+        historical_count = source_counts.get('historical', 0)
+        live_count = source_counts.get('live', 0)
+        
         with col1:
-            st.metric("Prix Actuel", dashboard.format_number(crypto_data['price']), 
-                     f"{crypto_data['change_24h']:+.2f}%")
+            st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-value">{total_points:,}</div>
+                <div class="metric-label">📊 Total Points</div>
+            </div>
+            """, unsafe_allow_html=True)
         
         with col2:
-            st.metric("Market Cap", dashboard.format_number(crypto_data['market_cap'], is_volume=True))
+            st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-value">{cryptos_count}</div>
+                <div class="metric-label">💎 Cryptos Actives</div>
+            </div>
+            """, unsafe_allow_html=True)
         
         with col3:
-            st.metric("Volume 24h", dashboard.format_number(crypto_data['volume'], is_volume=True))
+            st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-value">{historical_count:,}</div>
+                <div class="metric-label">📚 Historique</div>
+            </div>
+            """, unsafe_allow_html=True)
         
         with col4:
-            st.metric("Change 7j", f"{crypto_data['change_7d']:+.2f}%")
+            st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-value">{live_count}</div>
+                <div class="metric-label">⚡ Live</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Performance badge
+        perf_class = "perf-badge-good" if load_time < 2 else "perf-badge-warning" if load_time < 5 else "perf-badge-danger"
+        st.markdown(f"""
+        <div style="text-align: center; margin: 20px 0;">
+            <span class="{perf_class}">⚡ Chargé en {load_time:.2f}s</span>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Graphiques principaux
+        if 'symbol' in combined_data.columns and 'price' in combined_data.columns:
+            
+            col_chart, col_table = st.columns([3, 1])
+            
+            with col_chart:
+                st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+                st.subheader("📈 Évolution Prix - Vue Hybride")
+                
+                # Top cryptos par volume de données
+                top_cryptos = combined_data['symbol'].value_counts().head(8)
+                
+                # Créer subplots
+                fig = make_subplots(
+                    rows=2, cols=4,
+                    subplot_titles=[f"{symbol} ({count} pts)" for symbol, count in top_cryptos.items()],
+                    specs=[[{"secondary_y": False}]*4]*2,
+                    vertical_spacing=0.15,
+                    horizontal_spacing=0.1
+                )
+                
+                colors = {'historical': '#1f77b4', 'live': '#ff7f0e'}
+                
+                for i, (symbol, _) in enumerate(top_cryptos.items()):
+                    row = (i // 4) + 1
+                    col = (i % 4) + 1
+                    
+                    symbol_data = combined_data[combined_data['symbol'] == symbol].copy()
+                    
+                    if 'timestamp' in symbol_data.columns:
+                        symbol_data = symbol_data.sort_values('timestamp')
+                    
+                    # Séparer par source
+                    for source in ['historical', 'live']:
+                        if 'data_source' in symbol_data.columns:
+                            source_data = symbol_data[symbol_data['data_source'] == source]
+                        else:
+                            source_data = symbol_data if source == 'historical' else pd.DataFrame()
+                        
+                        if not source_data.empty:
+                            fig.add_trace(
+                                go.Scatter(
+                                    x=source_data['timestamp'] if 'timestamp' in source_data.columns else source_data.index,
+                                    y=source_data['price'],
+                                    mode='lines' if source == 'historical' else 'lines+markers',
+                                    name=f'{symbol} ({source})',
+                                    line=dict(color=colors[source], width=2 if source == 'live' else 1),
+                                    marker=dict(size=3) if source == 'live' else None,
+                                    showlegend=False
+                                ),
+                                row=row, col=col
+                            )
+                
+                fig.update_layout(
+                    height=600,
+                    title_text="🔄 Données Hybrides: Historique (Bleu) + Live (Orange)",
+                    showlegend=False
+                )
+                
+                st.plotly_chart(fig, use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            
+            with col_table:
+                st.subheader("🔥 Dernières Données")
+                
+                # Table des dernières données
+                if 'timestamp' in combined_data.columns:
+                    recent_data = combined_data.sort_values('timestamp').tail(20)
+                    
+                    display_cols = ['symbol', 'price']
+                    if 'data_source' in recent_data.columns:
+                        display_cols.append('data_source')
+                    if 'timestamp' in recent_data.columns:
+                        display_cols.append('timestamp')
+                    
+                    display_data = recent_data[display_cols].copy()
+                    
+                    # Formatage
+                    if 'price' in display_data.columns:
+                        display_data['price'] = display_data['price'].round(6)
+                    if 'timestamp' in display_data.columns:
+                        display_data['timestamp'] = display_data['timestamp'].dt.strftime('%H:%M:%S')
+                    
+                    st.dataframe(
+                        display_data.iloc[::-1],  # Inverser pour plus récent en premier
+                        use_container_width=True,
+                        height=400,
+                        hide_index=True
+                    )
+                
+                # Statistiques par crypto
+                st.subheader("💎 Stats par Crypto")
+                if 'symbol' in combined_data.columns:
+                    crypto_stats = combined_data.groupby('symbol').agg({
+                        'price': ['count', 'mean', 'std']
+                    }).round(2)
+                    crypto_stats.columns = ['Count', 'Avg Price', 'Volatility']
+                    
+                    st.dataframe(
+                        crypto_stats.head(10),
+                        use_container_width=True,
+                        height=300
+                    )
+        
+        # Performance et architecture info
+        st.markdown("---")
+        
+        col_perf1, col_perf2 = st.columns(2)
+        
+        with col_perf1:
+            st.subheader("🏗️ Architecture Hybride")
+            st.markdown(f"""
+            **📊 Sources de Données:**
+            - 📚 **Historique MinIO**: {historical_count:,} points (filtrés sur {hours_back}h)
+            - ⚡ **Live Kafka**: {live_count} points (buffer temps réel)
+            - 🔗 **Total Combiné**: {total_points:,} points
+            
+            **🚀 Optimisations:**
+            - 📁 Max {max_files} fichiers Parquet (sur 7000+)
+            - ⏱️ Filtrage temporel intelligent
+            - 🎯 Échantillonnage par récence
+            - 🔄 Fusion automatique + dédoublonnage
+            """)
+        
+        with col_perf2:
+            st.subheader("📈 Performances")
+            
+            # Calcul métriques performance
+            data_efficiency = (historical_count / 7000) * 100 if historical_count > 0 else 0
+            
+            st.markdown(f"""
+            **⚡ Métriques Temps Réel:**
+            - 🔍 **Temps de chargement**: {load_time:.2f}s
+            - 📊 **Efficacité données**: {data_efficiency:.1f}% des 7000 fichiers
+            - 🎯 **Cryptos actives**: {cryptos_count}
+            - 📡 **Stream Kafka**: {"✅ Actif" if status['kafka_active'] else "❌ Inactif"}
+            
+            **🔧 Status Technique:**
+            - 🗄️ **MinIO**: {"✅ Connecté" if status['minio_connected'] else "❌ Déconnecté"}
+            - 📅 **Dernière MAJ**: {status['last_historical_load'][:19] if status['last_historical_load'] else 'Jamais'}
+            """)
     
-    st.divider()
-    
-    # Graphique de prix détaillé
-    if symbol in dashboard.crypto_data and len(dashboard.crypto_data[symbol]) > 0:
-        st.header("📈 Graphique des Prix")
-        
-        # Options de timeframe
-        timeframe = st.selectbox("Période", ["1H", "6H", "24H", "7J"], index=2)
-        hours_map = {"1H": 1, "6H": 6, "24H": 24, "7J": 168}
-        selected_hours = hours_map[timeframe]
-        
-        # Données historiques
-        hist_data = list(dashboard.crypto_data[symbol])[-selected_hours*12:]  # 12 points par heure
-        
-        if hist_data:
-            df = pd.DataFrame(hist_data)
-            
-            fig = go.Figure()
-            
-            # Graphique en chandelier ou ligne
-            fig.add_trace(go.Scatter(
-                x=df['timestamp'],
-                y=df['price'],
-                mode='lines+markers',
-                name=f'{symbol} Prix',
-                line=dict(color='#00D4AA', width=2),
-                marker=dict(size=3, color='#00D4AA'),
-                hovertemplate='<b>%{y:,.2f}€</b><br>%{x}<extra></extra>'
-            ))
-            
-            fig.update_layout(
-                title=f'{crypto_name} ({symbol}) - {timeframe}',
-                xaxis_title='Temps',
-                yaxis_title='Prix (EUR)',
-                height=500,
-                showlegend=False,
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(17,17,17,0.8)',
-                font=dict(color='white'),
-                xaxis=dict(gridcolor='rgba(128,128,128,0.2)'),
-                yaxis=dict(gridcolor='rgba(128,128,128,0.2)')
-            )
-            
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("📊 Collecte des données en cours...")
     else:
-        st.info("📊 Aucune donnée historique disponible pour le moment.")
-    
-    # Tableau des dernières transactions (simulé)
-    st.header("💱 Dernières Transactions")
-    
-    # Générer des données de demo pour les transactions
-    transactions_data = []
-    for i in range(10):
-        transactions_data.append({
-            'Heure': (datetime.now() - timedelta(minutes=i*2)).strftime('%H:%M:%S'),
-            'Type': np.random.choice(['Achat', 'Vente']),
-            'Prix': f"{crypto_data['price'] + np.random.uniform(-50, 50):,.2f}€",
-            'Quantité': f"{np.random.uniform(0.1, 5):.4f} {symbol}",
-            'Total': f"{np.random.uniform(100, 5000):,.2f}€"
-        })
-    
-    st.dataframe(pd.DataFrame(transactions_data), use_container_width=True, hide_index=True)
+        st.warning("⚠️ Aucune donnée disponible. Vérifiez les connexions MinIO et Kafka.")
+        
+        # Debug info
+        st.subheader("🔍 Debug Info")
+        st.json(status)
 
-# Interface utilisateur principale
-def main():
-    # Vérifier si une crypto est sélectionnée
-    if st.session_state.selected_crypto:
-        crypto_detail_page(st.session_state.selected_crypto)
-    else:
-        main_page()
+else:
+    st.error("❌ Data Manager non initialisé")
 
-if __name__ == "__main__":
-    main()
+# Auto-refresh
+if auto_refresh and st.session_state.data_manager:
+    time.sleep(1)
+    st.rerun()

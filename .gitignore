@@ -131,3 +131,8 @@ minio/
 minio-data/
 minio-data-*/
 *.parquet
+
+# Ignore minio data changes
+minio/
+minio-data*/
+*.log

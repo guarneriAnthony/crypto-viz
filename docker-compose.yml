@@ -156,9 +156,7 @@ services:
   # Dashboard moderne v2 (en développement)
   # Dashboard Streamlit hybride
   crypto-dashboard-streamlit:
-    build:
-      context: ./dashboard-panel
-      dockerfile: Dockerfile.streamlit
+    image: crypto-viz-dashboard-with-redis
     container_name: crypto_dashboard_streamlit
     ports:
       - "192.168.1.76:5008:5008"
@@ -180,7 +178,26 @@ services:
       start_period: 30s
 
 
+  # ML Processor - Architecture standard pour prédictions temps réel
+  ml-processor:
+    build: ./ml-processor
+    container_name: crypto_ml_processor
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redpanda
+      - redis
+    networks:
+      - crypto-net
+    restart: unless-stopped
+
+
+
+
 
 networks:
   crypto-net:
     driver: bridge
+

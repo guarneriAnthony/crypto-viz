@@ -17,7 +17,7 @@ st.set_page_config(
     page_title="🚀 CryptoViz Live Dashboard",
     page_icon="₿",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 # Configuration logging
@@ -445,12 +445,13 @@ def main_page():
             
         with col2:
             # Bouton crypto avec logo et nom
-            if st.button(f"{crypto['symbol']} {crypto['name']}", 
-                        key=f"crypto_{crypto['symbol']}",
+            # Bouton crypto avec logo emoji selon le type
+            logo_emoji = "₿" if crypto["symbol"] == "BTC" else "🪙"
+            if st.button(f"{logo_emoji} {crypto['symbol']} {crypto['name']}", 
+                        key=f"crypto_{crypto['symbol']}", 
                         help=f"Cliquez pour voir les détails de {crypto['name']}"):
-                st.session_state.selected_crypto = crypto['symbol']
+                st.session_state.selected_crypto = crypto["symbol"]
                 st.rerun()
-            
         with col3:
             st.markdown(f"<div class='crypto-price'>{dashboard.format_number(crypto['price'])}</div>", 
                        unsafe_allow_html=True)
@@ -490,7 +491,7 @@ def main_page():
     st.markdown('</div>', unsafe_allow_html=True)
     
     # Auto-refresh
-    if st.sidebar.checkbox("🔄 Actualisation auto", value=False):
+    if st.sidebar.checkbox("🔄 Auto-refresh", value=False):
         time.sleep(5)
         st.rerun()
 

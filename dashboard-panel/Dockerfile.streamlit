@@ -12,15 +12,21 @@ RUN apt-get update && apt-get install -y \
 # Copier les fichiers de requirements
 COPY requirements.txt .
 
-# Ajouter les dépendances Streamlit
+# Ajouter les dépendances Streamlit et ML
 RUN echo "streamlit>=1.28.0" >> requirements.txt
 RUN echo "plotly>=5.15.0" >> requirements.txt
+RUN echo "scikit-learn>=1.3.0" >> requirements.txt
+RUN echo "numpy>=1.24.0" >> requirements.txt
 
 # Installation des dépendances Python
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copier l'application
+# Copier l'application complète
+COPY streamlit_crypto_home.py .
 COPY streamlit_crypto_dashboard.py .
+COPY pages/ ./pages/
+COPY utils/ ./utils/
+COPY components/ ./components/
 
 # Configuration Streamlit
 RUN mkdir -p ~/.streamlit/
@@ -43,5 +49,5 @@ ENV PYTHONPATH=/app
 ENV STREAMLIT_SERVER_PORT=5008
 ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
 
-# Lancement du dashboard Streamlit
-CMD ["streamlit", "run", "streamlit_crypto_dashboard.py", "--server.port=5008", "--server.address=0.0.0.0"]
+# Lancement du dashboard Streamlit avec page d'accueil multi-pages
+CMD ["streamlit", "run", "streamlit_crypto_home.py", "--server.port=5008", "--server.address=0.0.0.0"]

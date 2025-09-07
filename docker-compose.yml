@@ -180,29 +180,6 @@ services:
       start_period: 30s
 
 
-  crypto-dashboard-modern:
-    build: 
-      context: ./dashboard-panel
-      dockerfile: Dockerfile.modern
-    container_name: crypto_dashboard_modern
-    ports:
-      - "192.168.1.76:5007:5007"
-    environment:
-      - MINIO_ENDPOINT=http://minio:9000
-      - MINIO_ROOT_USER=cryptoviz
-      - MINIO_ROOT_PASSWORD=cryptoviz2024
-      - MINIO_BUCKET=crypto-data-partitioned
-    depends_on:
-      - minio
-    networks:
-      - crypto-net
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5007"] 
-      interval: 60s
-      timeout: 30s
-      retries: 3
-      start_period: 30s
 
 networks:
   crypto-net:

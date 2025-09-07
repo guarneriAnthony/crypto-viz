@@ -31,22 +31,26 @@ graph TB
     A[Scraper Multi-API] -->|Real-time| B[Redpanda Kafka]
     B --> C[Spark Streaming]
     C -->|Partitioned Parquet| D[MinIO S3 Lakehouse]
-    D --> E[Dashboard Panel]
+    D --> E[🚀 Dashboard Streamlit :5008]
     
     F[Redis Cache] --> A
-    G[Redpanda Console] --> B
-    H[Spark UI] --> C
-    I[MinIO Console] --> D
+    G[📡 Redpanda Console :8090] --> B
+    H[⚡ Spark UI :8082] --> C
+    I[🗄️ MinIO Console :9002] --> D
     
-    subgraph "Data Pipeline"
+    subgraph "🚀 Data Pipeline"
         A --> B --> C --> D --> E
     end
     
-    subgraph "Monitoring Stack"
+    subgraph "📊 Monitoring Stack"
         G
         H
         I
     end
+    
+    style E fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style D fill:#fff3e0,stroke:#e65100,stroke-width:3px
+    style A fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
 ```
 
 ### Services Architecture
@@ -57,7 +61,7 @@ graph TB
 | **Redpanda** | Message streaming | 19092 | Kafka-compatible |
 | **Spark Master/Worker** | Distributed processing | 8082 | Apache Spark 3.5.0 |
 | **MinIO** | Object storage (S3) | 9002 | S3-compatible storage |
-| **Dashboard** | Web interface | 5006 | Panel/Bokeh |
+| **Dashboard** | Interface web moderne | 5008 | Streamlit + Python |
 | **Redis** | Cache & metadata | 6379 | Redis 7 |
 
 ---
@@ -94,7 +98,7 @@ graph TB
 ### Prérequis
 - Docker & Docker Compose
 - 4GB RAM minimum (8GB recommandé)
-- Ports libres : 5006, 6379, 8082, 8090, 9002, 19092
+- Ports libres : 5008, 6379, 8082, 8090, 9002, 19092
 
 ### Installation rapide
 ```bash
@@ -133,7 +137,7 @@ REDPANDA_BROKERS=redpanda:9092
 Le dashboard est configuré pour une IP spécifique dans le docker-compose :
 ```yaml
 ports:
-  - "192.168.1.76:5006:5006"  # Modifier selon votre IP
+  - "192.168.1.76:5008:5008"  # Dashboard Streamlit
 ```
 
 ---
@@ -172,11 +176,11 @@ docker-compose build --no-cache
 ## 🔗 Accès aux interfaces
 
 | Interface | URL | Description |
-|-----------|-----|-------------|
-| **Dashboard Principal** | http://192.168.1.76:5006 | Visualisation des données crypto |
-| **Redpanda Console** | http://localhost:8090 | Monitoring Kafka topics |
-| **Spark Master UI** | http://localhost:8082 | Jobs Spark et performance |
-| **MinIO Console** | http://localhost:9002 | Gestion stockage S3 |
+|-----------|-----|--------------|
+| **🚀 Dashboard Principal** | http://192.168.1.76:5008 | Interface Streamlit moderne + visualisations |
+| **📡 Redpanda Console** | http://192.168.1.76:8090 | Monitoring Kafka topics |
+| **⚡ Spark Master UI** | http://192.168.1.76:8082 | Jobs Spark et performance |
+| **🗄️ MinIO Console** | http://192.168.1.76:9002 | Gestion stockage S3 |
 
 ### Identifiants MinIO
 - **Username**: cryptoviz
@@ -196,9 +200,9 @@ docker-compose build --no-cache
 ### Métriques clés
 ```bash
 # Vérifier la santé des services
-curl http://localhost:9002/minio/health/live  # MinIO
-curl http://localhost:8082                    # Spark UI
-curl http://localhost:8090                    # Redpanda Console
+curl http://192.168.1.76:9002/minio/health/live  # MinIO
+curl http://192.168.1.76:8082                     # Spark UI
+curl http://192.168.1.76:8090                     # Redpanda Console
 ```
 
 ### Structure des données stockées
@@ -264,7 +268,7 @@ docker-compose logs scraper
 docker-compose logs spark-streaming
 
 # Vérifier MinIO
-curl http://localhost:9002
+curl http://192.168.1.76:9002
 ```
 
 #### Erreurs de permissions MinIO

@@ -4,23 +4,32 @@
 **/config.py
 **/secrets.py
 
-# 💾 Data Files
+# 💾 Data Files & Lakehouse
 data/
 *.duckdb
 *.db
 *.sqlite3
 *.csv
 *.json
+*.parquet
+
+# 📦 MinIO Data Lakehouse
+minio/
+minio-data/
+minio-data-*/
 
 # 🐳 Docker
 .docker/
 docker-compose.override.yml
+volumes/
 
 # 🐍 Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.pyc
+*.pyo
 .Python
 build/
 develop-eggs/
@@ -39,19 +48,47 @@ wheels/
 *.egg
 MANIFEST
 
-# 📝 IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# 🧪 Tests
+.coverage
+htmlcov/
+.tox/
+.pytest_cache/
+.cache
 
 # 📊 Logs
 *.log
 logs/
 log/
+debug.log
+*.debug
 
-# 🔄 OS
+# 🔧 Temp files & Backups
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*.broken
+*.orig
+*~
+temp_*
+*_backup.*
+
+# 🌐 Environnements virtuels
+venv/
+env/
+ENV/
+migration_env/
+test_env/
+*.venv
+
+# 📝 IDE & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 🔄 OS Files
 .DS_Store
 .DS_Store?
 ._*
@@ -66,73 +103,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# 🧪 Tests
-.coverage
-htmlcov/
-.tox/
-.pytest_cache/
-.cache
-
-# 🔧 Temp files
-*.tmp
-*.temp
-*.bak
-*.backup
-*~
-
 # 📚 Documentation build
 docs/_build/
 site/
 
-# Environnements virtuels
-migration_env/
-*.backup
-
-# Fichiers de backup
-*.backup
-*.bak
-*.old
-*.broken
-*~
-*.orig
-*.tmp
-
-# Logs et debug
-*.log
-debug.log
-*.debug
-
-# IDE et éditeurs
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS générés
-.DS_Store
-Thumbs.db
-
-# Python cache (si ajouté plus tard)
-__pycache__/
-*.pyc
-*.pyo
-
-# Docker volumes et données temporaires
-volumes/
-data/temp/
-
-# 📝 Fichiers de configuration WARP
+# 📝 Configuration WARP
 WARP.md
 .warp/
-
-
-# 📦 MinIO Data
-minio/
-minio-data/
-minio-data-*/
-*.parquet
-
-# Ignore minio data changes
-minio/
-minio-data*/
-*.log

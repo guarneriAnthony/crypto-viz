@@ -204,7 +204,7 @@ with st.sidebar:
     max_files = st.slider("📁 Max fichiers Parquet", 20, 300, 100, 
                          help="Limite pour éviter surcharge")
     
-    if st.button("🔄 Recharger Historique", use_container_width=True):
+    if st.button("🔄 Recharger Historique", width="stretch"):
         with st.spinner("🔍 Rechargement historique..."):
             success = st.session_state.data_manager.refresh_historical(hours_back, max_files)
             if success:
@@ -218,7 +218,7 @@ with st.sidebar:
     # Auto-refresh
     auto_refresh = st.checkbox("🔄 Auto-refresh (15s)", value=True)
     
-    if st.button("📊 Force Refresh Data", use_container_width=True):
+    if st.button("📊 Force Refresh Data", width="stretch"):
         st.rerun()
     
     # Performance info
@@ -348,7 +348,7 @@ if st.session_state.data_manager:
                     showlegend=False
                 )
                 
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
                 st.markdown('</div>', unsafe_allow_html=True)
             
             with col_table:
@@ -374,7 +374,7 @@ if st.session_state.data_manager:
                     
                     st.dataframe(
                         display_data.iloc[::-1],  # Inverser pour plus récent en premier
-                        use_container_width=True,
+                        width="stretch",
                         height=400,
                         hide_index=True
                     )
@@ -389,7 +389,7 @@ if st.session_state.data_manager:
                     
                     st.dataframe(
                         crypto_stats.head(10),
-                        use_container_width=True,
+                        width="stretch",
                         height=300
                     )
         

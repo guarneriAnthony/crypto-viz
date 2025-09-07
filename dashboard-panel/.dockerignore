@@ -1,0 +1,16 @@
+# Ignorer seulement les fichiers non nécessaires
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.git/
+.gitignore
+*.md
+Dockerfile*
+.dockerignore
+
+# Garder tous les fichiers Python importants
+!*.py
+!utils/
+!pages/
+!components/

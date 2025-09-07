@@ -76,7 +76,7 @@ with st.sidebar:
     for symbol in sorted(available_cryptos):
         name = symbol_to_name.get(symbol, symbol)
         
-        if st.button(f"📊 {name} ({symbol})", use_container_width=True):
+        if st.button(f"📊 {name} ({symbol})", width="stretch"):
             selected_crypto = symbol
     
     # Auto-refresh
@@ -116,7 +116,7 @@ if not selected_crypto:
                 'Variation': f"{change:+.1f}%"
             })
         
-        st.dataframe(summary_data, use_container_width=True)
+        st.dataframe(summary_data, width="stretch")
         
         # Signaux de trading
         buy_signals = [d for d in summary_data if 'BUY' in d['Signal']]
@@ -235,7 +235,7 @@ else:
             height=500
         )
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
         
         # Détails techniques
         with st.expander("🔧 Détails Techniques"):

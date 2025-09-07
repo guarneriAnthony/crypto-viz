@@ -1,7 +1,6 @@
 """
 Hybrid Data Manager - Solution définitive pour historique MinIO + Stream Kafka
 Gère automatiquement les 7000+ fichiers Parquet avec filtrage intelligent
-FIXÉE: Consumer Kafka maintenant actif en permanence sans timeout
 """
 
 import os
@@ -22,7 +21,7 @@ class HybridDataManager:
     """
     Data Manager définitif pour architecture hybride production-ready
     - Historique MinIO (filtré intelligemment pour éviter 7000+ fichiers)
-    - Stream Kafka temps réel (connexion permanente FIXÉE)
+    - Stream Kafka temps réel
     - Fusion automatique et dédoublonnage
     - Cache optimisé
     """
@@ -51,7 +50,6 @@ class HybridDataManager:
         self._last_historical_load = None
         self._kafka_consumer_active = False
         self._kafka_thread = None
-        self._kafka_should_stop = False  # Flag pour arrêt propre
         
         # Configuration de performance
         self.default_hours_back = 24
@@ -61,7 +59,7 @@ class HybridDataManager:
         # Initialisation connexions
         self._init_minio()
         
-        logger.info("🚀 HybridDataManager initialisé (version FIXÉE)")
+        logger.info("🚀 HybridDataManager initialisé")
     
     def _init_minio(self):
         """Initialise la connexion MinIO"""
@@ -214,109 +212,55 @@ class HybridDataManager:
             return False
     
     def start_kafka_consumer(self):
-        """Démarre le consumer Kafka en arrière-plan avec reconnexion automatique"""
+        """Démarre le consumer Kafka en arrière-plan"""
         if self._kafka_consumer_active:
             return True
         
         def kafka_worker():
-            """Worker Kafka avec reconnexion automatique et sans timeout"""
-            retry_count = 0
-            max_retries = 5
-            retry_delay = 5
-            
-            while not self._kafka_should_stop:
-                consumer = None
-                try:
-                    logger.info(f"🎯 Tentative de connexion Kafka (essai {retry_count + 1})...")
-                    
-                    consumer = KafkaConsumer(
-                        self.kafka_topic,
-                        bootstrap_servers=self.kafka_brokers,
-                        value_deserializer=lambda x: json.loads(x.decode('utf-8')),
-                        # CORRECTION PRINCIPALE: Suppression du timeout
-                        # consumer_timeout_ms=None,  # Pas de timeout !
-                        auto_offset_reset='latest',
-                        enable_auto_commit=True,
-                        group_id='hybrid_data_manager',
-                        # Configuration de reconnexion robuste
-                        reconnect_backoff_ms=1000,
-                        reconnect_backoff_max_ms=10000,
-                        heartbeat_interval_ms=3000,
-                        session_timeout_ms=30000,
-                        # Éviter les déconnexions fréquentes
-                        connections_max_idle_ms=600000,  # 10 minutes
-                        max_poll_records=500,
-                        fetch_min_bytes=1,
-                        fetch_max_wait_ms=500
-                    )
-                    
-                    self._kafka_consumer_active = True
-                    retry_count = 0  # Reset du compteur en cas de succès
-                    logger.info(f"🎯 Kafka consumer connecté: {self.kafka_topic}")
-                    
-                    # Boucle de consommation INFINIE
-                    for message in consumer:
-                        if self._kafka_should_stop:
-                            break
-                            
-                        try:
-                            data = message.value
-                            
-                            # Enrichir avec métadonnées
-                            data['data_source'] = 'live'
-                            data['received_at'] = datetime.now().isoformat()
-                            
-                            if 'timestamp' not in data:
-                                data['timestamp'] = data['received_at']
-                            
-                            # Ajouter au buffer
-                            self._live_buffer.append(data)
-                            
-                            logger.debug(f"📨 Live: {data.get('symbol', 'Unknown')} = ${data.get('price', 0)}")
-                            
-                        except Exception as e:
-                            logger.warning(f"⚠️ Erreur traitement message Kafka: {e}")
-                            continue
-                    
-                except Exception as e:
-                    logger.error(f"❌ Erreur Kafka consumer (essai {retry_count + 1}): {e}")
-                    self._kafka_consumer_active = False
-                    
-                    retry_count += 1
-                    if retry_count >= max_retries:
-                        logger.error(f"❌ Abandon après {max_retries} tentatives")
-                        break
-                    
-                    logger.info(f"🔄 Reconnexion dans {retry_delay}s...")
-                    time.sleep(retry_delay)
-                    retry_delay = min(retry_delay * 2, 60)  # Exponential backoff
-                    
-                finally:
-                    if consumer:
-                        try:
-                            consumer.close()
-                        except:
-                            pass
-            
-            self._kafka_consumer_active = False
-            logger.info("🛑 Kafka consumer arrêté")
+            try:
+                consumer = KafkaConsumer(
+                    self.kafka_topic,
+                    bootstrap_servers=self.kafka_brokers,
+                    value_deserializer=lambda x: json.loads(x.decode('utf-8')),
+                    consumer_timeout_ms=10000,
+                    auto_offset_reset='latest',
+                    enable_auto_commit=True,
+                    group_id='hybrid_data_manager'
+                )
+                
+                self._kafka_consumer_active = True
+                logger.info(f"🎯 Kafka consumer démarré: {self.kafka_topic}")
+                
+                for message in consumer:
+                    try:
+                        data = message.value
+                        
+                        # Enrichir avec métadonnées
+                        data['data_source'] = 'live'
+                        data['received_at'] = datetime.now().isoformat()
+                        
+                        if 'timestamp' not in data:
+                            data['timestamp'] = data['received_at']
+                        
+                        # Ajouter au buffer
+                        self._live_buffer.append(data)
+                        
+                        logger.debug(f"📨 Live: {data.get('symbol', 'Unknown')} = ${data.get('price', 0)}")
+                        
+                    except Exception as e:
+                        logger.warning(f"⚠️ Erreur message Kafka: {e}")
+                        
+            except Exception as e:
+                logger.error(f"❌ Erreur Kafka consumer: {e}")
+                self._kafka_consumer_active = False
         
-        self._kafka_should_stop = False
         self._kafka_thread = threading.Thread(target=kafka_worker, daemon=True)
         self._kafka_thread.start()
         
         # Attendre démarrage
-        time.sleep(2)
+        time.sleep(1)
         return self._kafka_consumer_active
     
-    def stop_kafka_consumer(self):
-        """Arrêt propre du consumer Kafka"""
-        if self._kafka_consumer_active:
-            logger.info("🛑 Arrêt du consumer Kafka...")
-            self._kafka_should_stop = True
-            if self._kafka_thread and self._kafka_thread.is_alive():
-                self._kafka_thread.join(timeout=10)
-        
     def get_combined_data(self, auto_load_historical: bool = True) -> pd.DataFrame:
         """
         Retourne les données combinées (historique + live)
@@ -331,7 +275,7 @@ class HybridDataManager:
             # Démarrage automatique Kafka si nécessaire
             if not self._kafka_consumer_active:
                 logger.info("🔄 Auto-démarrage Kafka consumer...")
-                self.start_kafka_consumer()
+                # # self.start_kafka_consumer()  # Désactivé - erreurs de connexion  # Désactivé temporairement
             
             # Conversion buffer live en DataFrame
             live_df = pd.DataFrame()
@@ -398,20 +342,12 @@ class HybridDataManager:
             'combined_count': combined_count,
             'active_cryptos': cryptos_count,
             'last_historical_load': self._last_historical_load.isoformat() if self._last_historical_load else None,
-            'minio_connected': self.fs is not None,
-            'kafka_thread_alive': self._kafka_thread.is_alive() if self._kafka_thread else False
+            'minio_connected': self.fs is not None
         }
     
     def refresh_historical(self, hours_back: int = None, max_files: int = None):
         """Force le refresh des données historiques"""
         return self.load_historical_data(hours_back, max_files, force_reload=True)
-
-    def __del__(self):
-        """Nettoyage à la destruction"""
-        try:
-            self.stop_kafka_consumer()
-        except:
-            pass
 
 # Instance globale singleton
 _global_data_manager = None

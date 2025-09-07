@@ -18,7 +18,7 @@ import os
 
 # Import du data manager hybride
 try:
-    from utils.hybrid_data_manager import HybridDataManager
+    from utils.hybrid_data_manager import get_data_manager
     DATA_MANAGER_AVAILABLE = True
 except ImportError as e:
     st.error(f"❌ Hybrid Data Manager non disponible: {e}")
@@ -144,7 +144,7 @@ st.markdown("""
 # Variables globales pour cache
 if 'data_manager' not in st.session_state:
     if DATA_MANAGER_AVAILABLE:
-        st.session_state.data_manager = HybridDataManager()
+        st.session_state.data_manager = get_data_manager()
     else:
         st.session_state.data_manager = None
 

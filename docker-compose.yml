@@ -131,11 +131,37 @@ services:
       - crypto-net
     restart: unless-stopped
 
-  crypto-dashboard-panel:
-    build: ./dashboard-panel
-    container_name: crypto_dashboard_panel
+#   crypto-dashboard-panel:
+#     build: ./dashboard-panel
+#     container_name: crypto_dashboard_panel
+#     ports:
+#       - "192.168.1.76:5006:5006"  # IP spécifique comme avant
+#     environment:
+#       - MINIO_ENDPOINT=http://minio:9000
+#       - MINIO_ROOT_USER=cryptoviz
+#       - MINIO_ROOT_PASSWORD=cryptoviz2024
+#       - MINIO_BUCKET=crypto-data-partitioned
+#     depends_on:
+#       - minio
+#     networks:
+#       - crypto-net
+#     restart: unless-stopped
+#     healthcheck:
+#       test: ["CMD", "curl", "-f", "http://192.168.1.76:5006"]
+#       interval: 30s
+#       timeout: 10s
+#       retries: 3
+
+
+  # Dashboard moderne v2 (en développement)
+  # Dashboard Streamlit hybride
+  crypto-dashboard-streamlit:
+    build:
+      context: ./dashboard-panel
+      dockerfile: Dockerfile.streamlit
+    container_name: crypto_dashboard_streamlit
     ports:
-      - "192.168.1.76:5006:5006"  # IP spécifique comme avant
+      - "192.168.1.76:5008:5008"
     environment:
       - MINIO_ENDPOINT=http://minio:9000
       - MINIO_ROOT_USER=cryptoviz
@@ -147,13 +173,13 @@ services:
       - crypto-net
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://192.168.1.76:5006"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "curl", "-f", "http://localhost:5008"]
+      interval: 60s
+      timeout: 30s
       retries: 3
+      start_period: 30s
 
 
-  # Dashboard moderne v2 (en développement)
   crypto-dashboard-modern:
     build: 
       context: ./dashboard-panel
@@ -171,6 +197,12 @@ services:
     networks:
       - crypto-net
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5007"] 
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 30s
 
 networks:
   crypto-net:

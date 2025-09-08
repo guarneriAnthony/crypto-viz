@@ -1,7 +1,6 @@
 """
-Page Streamlit ML Ultra
+Page Streamlit ML Ultra - Version finale avec interface ultra-moderne
 """
-import os
 import streamlit as st
 import redis
 import json
@@ -12,6 +11,7 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 from datetime import datetime, timedelta
 import time
+import os
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -23,7 +23,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS Custom ultra moderne
+# CSS Ultra-moderne identique à l'original
 st.markdown("""
 <style>
 /* Import Google Fonts */
@@ -142,59 +142,6 @@ st.markdown("""
     letter-spacing: 1px;
 }
 
-/* Alertes */
-.alert-success {
-    background: linear-gradient(135deg, rgba(0, 255, 127, 0.2), rgba(0, 255, 127, 0.1));
-    border: 1px solid var(--success-glow);
-    border-radius: 10px;
-    padding: 1rem;
-    margin: 0.5rem 0;
-    animation: alertGlow 2s ease-in-out infinite alternate;
-}
-
-.alert-danger {
-    background: linear-gradient(135deg, rgba(255, 0, 110, 0.2), rgba(255, 0, 110, 0.1));
-    border: 1px solid var(--secondary-glow);
-    border-radius: 10px;
-    padding: 1rem;
-    margin: 0.5rem 0;
-    animation: alertGlow 2s ease-in-out infinite alternate;
-}
-
-@keyframes alertGlow {
-    0% { box-shadow: 0 0 5px currentColor; }
-    100% { box-shadow: 0 0 15px currentColor; }
-}
-
-/* Sidebar */
-.css-1d391kg {
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(20px);
-}
-
-/* Boutons */
-.stButton > button {
-    background: linear-gradient(45deg, var(--primary-glow), var(--secondary-glow));
-    color: white;
-    border: none;
-    border-radius: 10px;
-    padding: 0.5rem 1.5rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.stButton > button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 245, 255, 0.4);
-}
-
-/* Selectbox */
-.stSelectbox > div > div {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
 /* Graphiques Plotly */
 .js-plotly-plot {
     border-radius: 15px;
@@ -212,21 +159,10 @@ st.markdown("""
 .fadeInUp {
     animation: fadeInUp 0.6s ease-out;
 }
-
-/* Status indicators */
-.status-online {
-    color: var(--success-glow);
-    text-shadow: 0 0 10px currentColor;
-}
-
-.status-offline {
-    color: var(--secondary-glow);
-    text-shadow: 0 0 10px currentColor;
-}
 </style>
 """, unsafe_allow_html=True)
 
-# Header principal
+# Header principal identique à l'original
 st.markdown("""
 <div class="main-header fadeInUp">
     <div class="main-title">🚀 CRYPTO ML ULTRA</div>
@@ -265,7 +201,6 @@ def get_ml_predictions(symbol=None):
             data = redis_client.get(key)
             return json.loads(data) if data else {}
         else:
-            # Récupérer toutes les cryptos disponibles
             cryptos = redis_client.smembers("ml:ultra:available_cryptos")
             predictions = {}
             for crypto in cryptos:
@@ -290,55 +225,25 @@ def get_performance_metrics():
     except:
         return {}
 
-def get_alerts():
-    """Récupère les alertes récentes"""
-    if not redis_client:
-        return []
-    
-    try:
-        keys = redis_client.keys("ml:alerts:*")
-        alerts = []
-        for key in keys[-10:]:  # Dernières 10 alertes
-            data = redis_client.get(key)
-            if data:
-                alerts.append(json.loads(data))
-        return sorted(alerts, key=lambda x: x.get('timestamp', ''), reverse=True)
-    except:
-        return []
-
-# Sidebar
+# Sidebar identique à l'original
 with st.sidebar:
-    st.markdown("###  Configuration")
+    st.markdown("### ⚙️ Configuration")
     
     # Status système
-    st.markdown("###  Status Système")
+    st.markdown("### 📊 Status Système")
     if redis_client:
-        st.markdown('<div class="status-online">🟢 Redis Connected</div>', unsafe_allow_html=True)
+        st.markdown('<div style="color: #00ff7f;">🟢 Redis Connected</div>', unsafe_allow_html=True)
     else:
-        st.markdown('<div class="status-offline">🔴 Redis Disconnected</div>', unsafe_allow_html=True)
+        st.markdown('<div style="color: #ff006e;">🔴 Redis Disconnected</div>', unsafe_allow_html=True)
     
     # Auto-refresh
-    auto_refresh = st.checkbox(" Auto-refresh (30s)", value=True)
+    auto_refresh = st.checkbox("🔄 Auto-refresh (30s)", value=True)
     if auto_refresh:
         time.sleep(30)
         st.rerun()
     
-    # Filtre crypto
-    all_predictions = get_ml_predictions()
-    available_cryptos = list(all_predictions.keys())
-    
-    if available_cryptos:
-        selected_crypto = st.selectbox(
-            "💰 Sélectionner Crypto",
-            ["Toutes"] + available_cryptos,
-            index=0
-        )
-    else:
-        st.warning("Aucune donnée ML disponible")
-        selected_crypto = None
-    
     # Métriques système
-    st.markdown("###  Métriques Système")
+    st.markdown("### 📈 Métriques Système")
     perf_metrics = get_performance_metrics()
     
     if perf_metrics:
@@ -351,11 +256,26 @@ with st.sidebar:
         st.metric("Uptime", uptime_str)
 
 # Corps principal
+all_predictions = get_ml_predictions()
+available_cryptos = list(all_predictions.keys())
+
+# Filtre crypto dans sidebar
+with st.sidebar:
+    if available_cryptos:
+        selected_crypto = st.selectbox(
+            "💰 Sélectionner Crypto",
+            ["Toutes"] + available_cryptos,
+            index=0
+        )
+    else:
+        st.warning("Aucune donnée ML disponible")
+        selected_crypto = None
+
 if not all_predictions:
-    st.warning(" En attente de données ML... Assurez-vous que le ML Processor Ultra tourne.")
+    st.warning("⏳ En attente de données ML... Assurez-vous que le ML Processor Ultra tourne.")
     st.stop()
 
-# Métriques en temps réel
+# Métriques en temps réel avec cartes ultra-modernes
 col1, col2, col3, col4, col5 = st.columns(5)
 
 total_cryptos = len(all_predictions)
@@ -372,7 +292,7 @@ with col1:
     st.markdown(f"""
     <div class="metric-card fadeInUp">
         <div class="metric-value">{total_cryptos}</div>
-        <div class="metric-label"> Cryptos Actives</div>
+        <div class="metric-label">🔮 Cryptos Actives</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -380,7 +300,7 @@ with col2:
     st.markdown(f"""
     <div class="metric-card fadeInUp">
         <div class="metric-value">{total_signals_buy}</div>
-        <div class="metric-label">Signaux Buy</div>
+        <div class="metric-label">📈 Signaux Buy</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -388,7 +308,7 @@ with col3:
     st.markdown(f"""
     <div class="metric-card fadeInUp">
         <div class="metric-value">{avg_confidence:.1%}</div>
-        <div class="metric-label"> Confiance Moy.</div>
+        <div class="metric-label">🎯 Confiance Moy.</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -396,7 +316,7 @@ with col4:
     st.markdown(f"""
     <div class="metric-card fadeInUp">
         <div class="metric-value">{total_anomalies}</div>
-        <div class="metric-label"> Anomalies</div>
+        <div class="metric-label">⚠️ Anomalies</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -404,60 +324,16 @@ with col5:
     st.markdown(f"""
     <div class="metric-card fadeInUp">
         <div class="metric-value">{avg_volatility:.1f}%</div>
-        <div class="metric-label"> Volatilité Moy.</div>
+        <div class="metric-label">📊 Volatilité Moy.</div>
     </div>
     """, unsafe_allow_html=True)
 
 st.markdown("---")
 
-# Alertes récentes
-st.markdown("###  Alertes Temps Réel")
-alerts = get_alerts()
-
-if alerts:
-    alert_cols = st.columns(min(len(alerts), 3))
-    for i, alert in enumerate(alerts[:3]):
-        with alert_cols[i]:
-            alert_type = alert.get('type', 'unknown')
-            symbol = alert.get('symbol', 'N/A')
-            
-            if alert_type == 'trading_signal':
-                signal = alert.get('signal', '')
-                confidence = alert.get('confidence', 0)
-                change_pct = alert.get('change_pct', 0)
-                
-                alert_class = "alert-success" if "BUY" in signal else "alert-danger"
-                st.markdown(f"""
-                <div class="{alert_class}">
-                    <strong> {symbol}</strong><br>
-                    Signal: <strong>{signal}</strong><br>
-                    Change: <strong>{change_pct:+.2f}%</strong><br>
-                    Confiance: <strong>{confidence:.1%}</strong>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            elif alert_type == 'price_anomaly':
-                anomaly_type = alert.get('anomaly_type', 'unknown')
-                severity = alert.get('severity', 'medium')
-                score = alert.get('score', 0)
-                
-                st.markdown(f"""
-                <div class="alert-danger">
-                    <strong> {symbol}</strong><br>
-                    Type: <strong>{anomaly_type}</strong><br>
-                    Sévérité: <strong>{severity}</strong><br>
-                    Score: <strong>{score:.1f}</strong>
-                </div>
-                """, unsafe_allow_html=True)
-else:
-    st.info("Aucune alerte récente")
-
-st.markdown("---")
-
 # Graphiques principaux
 if selected_crypto == "Toutes" or selected_crypto is None:
-    # Vue d'ensemble
-    st.markdown("###  Vue d'Ensemble - Toutes les Cryptos")
+    # Vue d'ensemble avec graphique ultra-moderne
+    st.markdown("### 🌟 Vue d'Ensemble - Toutes les Cryptos")
     
     # Graphique ensemble des prédictions
     fig_overview = go.Figure()
@@ -475,7 +351,7 @@ if selected_crypto == "Toutes" or selected_crypto is None:
             mode='markers',
             name=symbol,
             marker=dict(
-                size=20 + confidence * 30,  # Taille basée sur confiance
+                size=20 + confidence * 30,
                 color=colors[i % len(colors)],
                 line=dict(width=2, color='white'),
                 opacity=0.8
@@ -498,7 +374,7 @@ if selected_crypto == "Toutes" or selected_crypto is None:
     ))
     
     fig_overview.update_layout(
-        title=" Précision des Prédictions Ensemble",
+        title="🎯 Précision des Prédictions Ensemble",
         xaxis_title="Prix Actuel ($)",
         yaxis_title="Prix Prédit ($)",
         template="plotly_dark",
@@ -511,7 +387,7 @@ if selected_crypto == "Toutes" or selected_crypto is None:
     
     st.plotly_chart(fig_overview, use_container_width=True)
     
-    # Distribution des signaux
+    # Distribution des signaux et volatilité
     col1, col2 = st.columns(2)
     
     with col1:
@@ -528,7 +404,7 @@ if selected_crypto == "Toutes" or selected_crypto is None:
         ))
         
         fig_signals.update_layout(
-            title=" Distribution des Signaux",
+            title="📊 Distribution des Signaux",
             template="plotly_dark",
             plot_bgcolor='rgba(0,0,0,0)',
             paper_bgcolor='rgba(0,0,0,0)',
@@ -556,7 +432,7 @@ if selected_crypto == "Toutes" or selected_crypto is None:
         ))
         
         fig_vol.update_layout(
-            title=" Volatilité par Crypto",
+            title="⚡ Volatilité par Crypto",
             xaxis_title="Crypto",
             yaxis_title="Volatilité (%)",
             template="plotly_dark",
@@ -576,7 +452,6 @@ else:
         
         ensemble = data.get('ensemble_prediction', {})
         technical = data.get('technical_indicators', {})
-        anomalies = data.get('anomalies', {})
         
         # Métriques crypto spécifique
         col1, col2, col3, col4 = st.columns(4)
@@ -597,141 +472,16 @@ else:
         with col4:
             rsi = technical.get('rsi', 50)
             st.metric("RSI", f"{rsi:.1f}")
-        
-        # Graphique multi-horizon
-        multi_horizon = data.get('multi_horizon', {})
-        
-        fig_multi = make_subplots(
-            rows=2, cols=2,
-            subplot_titles=(
-                " Prédictions Multi-Horizon",
-                " Indicateurs Techniques", 
-                " Modèles Individuels",
-                " Détection d'Anomalies"
-            ),
-            specs=[[{"secondary_y": False}, {"secondary_y": True}],
-                   [{"type": "bar"}, {"type": "indicator"}]]
-        )
-        
-        # Multi-horizon predictions
-        horizons = ['Court Terme (1h)', 'Moyen Terme (6h)', 'Long Terme (24h)']
-        horizon_values = [
-            multi_horizon.get('short_term_1h', current_price),
-            np.mean(multi_horizon.get('medium_term_6h', [current_price])),
-            np.mean(multi_horizon.get('long_term_24h', [current_price]))
-        ]
-        
-        fig_multi.add_trace(
-            go.Bar(x=horizons, y=horizon_values, name="Prédictions",
-                  marker_color=['#00f5ff', '#ff006e', '#8338ec']),
-            row=1, col=1
-        )
-        
-        # Bollinger Bands (si disponibles)
-        bollinger = technical.get('bollinger_bands', {})
-        if bollinger:
-            fig_multi.add_trace(
-                go.Scatter(x=['Support', 'Prix', 'Résistance'],
-                          y=[bollinger.get('lower', 0), current_price, bollinger.get('upper', 0)],
-                          mode='lines+markers', name="Bollinger",
-                          line=dict(color='#ffd700', width=3)),
-                row=1, col=2
-            )
-        
-        # Modèles individuels
-        individual = data.get('individual_models', {})
-        if individual:
-            models = list(individual.keys())
-            values = list(individual.values())
-            
-            fig_multi.add_trace(
-                go.Bar(x=models, y=values, name="Modèles",
-                      marker_color=px.colors.qualitative.Set2),
-                row=2, col=1
-            )
-        
-        # Gauge d'anomalie
-        price_anomaly = anomalies.get('price', {})
-        anomaly_score = price_anomaly.get('score', 0)
-        
-        fig_multi.add_trace(
-            go.Indicator(
-                mode="gauge+number",
-                value=anomaly_score,
-                domain={'x': [0, 1], 'y': [0, 1]},
-                title={'text': "Score Anomalie"},
-                gauge={
-                    'axis': {'range': [None, 5]},
-                    'bar': {'color': "#00f5ff"},
-                    'steps': [
-                        {'range': [0, 2], 'color': "#00ff7f"},
-                        {'range': [2, 3], 'color': "#ffd700"},
-                        {'range': [3, 5], 'color': "#ff006e"}
-                    ],
-                    'threshold': {
-                        'line': {'color': "white", 'width': 4},
-                        'thickness': 0.75,
-                        'value': 3
-                    }
-                }
-            ),
-            row=2, col=2
-        )
-        
-        fig_multi.update_layout(
-            height=800,
-            template="plotly_dark",
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            font=dict(color='white'),
-            showlegend=True
-        )
-        
-        st.plotly_chart(fig_multi, use_container_width=True)
-        
-        # Détails techniques
-        st.markdown("### 🔧 Détails Techniques")
-        
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            st.markdown("** Ensemble Prediction:**")
-            st.json({
-                'signal': ensemble.get('signal'),
-                'strength': ensemble.get('strength'),
-                'change_pct': f"{ensemble.get('change_pct', 0):.2f}%",
-                'confidence': f"{ensemble.get('confidence', 0):.1%}"
-            })
-        
-        with col2:
-            st.markdown("** Technical Indicators:**")
-            st.json({
-                'volatility': f"{technical.get('volatility', 0):.2f}%",
-                'support': f"${technical.get('support', 0):.4f}",
-                'resistance': f"${technical.get('resistance', 0):.4f}",
-                'rsi': f"{technical.get('rsi', 50):.1f}"
-            })
-        
-        with col3:
-            st.markdown("** Anomalies:**")
-            st.json({
-                'price_anomaly': price_anomaly.get('is_anomaly', False),
-                'anomaly_type': price_anomaly.get('type', 'normal'),
-                'severity': price_anomaly.get('severity', 'low'),
-                'score': f"{price_anomaly.get('score', 0):.2f}"
-            })
 
-# Footer
+# Footer ultra-moderne
 st.markdown("---")
 st.markdown("""
 <div style="text-align: center; padding: 2rem; color: rgba(255,255,255,0.6);">
-    <p> <strong>Crypto ML Ultra</strong> - Powered by Advanced ML Ensemble Models</p>
-    <p> Temps réel •  IA Avancée •  Prédictions Multi-Horizon</p>
+    <p>⚡ <strong>Crypto ML Ultra</strong> - Powered by Advanced ML Ensemble Models</p>
+    <p>🚀 Temps réel • 🧠 IA Avancée • 📊 Prédictions Multi-Horizon</p>
 </div>
 """, unsafe_allow_html=True)
 
 # Auto-refresh en bas
 if auto_refresh:
-    st.markdown('<div style="position: fixed; bottom: 20px; right: 20px; background: rgba(0,245,255,0.2); padding: 10px; border-radius: 10px; color: #00f5ff;"> Auto-refresh actif</div>', unsafe_allow_html=True)# Build timestamp: lun. 08 sept. 2025 22:34:58 CEST
-# Fix Redis connection: lun. 08 sept. 2025 22:42:37 CEST
-# Force rebuild with os.getenv: 1757364322
+    st.markdown('<div style="position: fixed; bottom: 20px; right: 20px; background: rgba(0,245,255,0.2); padding: 10px; border-radius: 10px; color: #00f5ff;">🔄 Auto-refresh actif</div>', unsafe_allow_html=True)

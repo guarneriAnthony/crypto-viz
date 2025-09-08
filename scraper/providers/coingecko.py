@@ -3,7 +3,7 @@ from .base import BaseProvider
 
 class CoinGeckoProvider(BaseProvider):
     """
-    Provider pour récupérer les données depuis CoinGecko API (gratuit)
+    Provider pour récupérer les données depuis CoinGecko API 
     """
     
     def __init__(self):
@@ -36,7 +36,7 @@ class CoinGeckoProvider(BaseProvider):
         }
         self.timeout = 20
         
-        print(f"🔄 Récupération depuis {self.name}...", flush=True)
+        print(f" Récupération depuis {self.name}...", flush=True)
         data = self._make_request(url, params=params)
         
         if not data or not isinstance(data, list):
@@ -108,7 +108,7 @@ class CoinGeckoProvider(BaseProvider):
                 print(f"⚠️ Erreur parsing {self.name} pour {crypto.get('id', 'unknown')}: {e}", flush=True)
                 continue
         
-        print(f"📊 {self.name}: {len(crypto_list)} cryptos récupérées", flush=True)
+        print(f" {self.name}: {len(crypto_list)} cryptos récupérées", flush=True)
         return crypto_list
     
     def get_source_name(self) -> str:

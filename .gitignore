@@ -1,10 +1,10 @@
-# 🔐 API Keys & Secrets
+#  API Keys & Secrets
 *.env
 .env*
 **/config.py
 **/secrets.py
 
-# 💾 Data Files & Lakehouse
+#  Data Files & Lakehouse
 data/
 *.duckdb
 *.db
@@ -13,17 +13,17 @@ data/
 *.json
 *.parquet
 
-# 📦 MinIO Data Lakehouse
+#  MinIO Data Lakehouse
 minio/
 minio-data/
 minio-data-*/
 
-# 🐳 Docker
+#  Docker
 .docker/
 docker-compose.override.yml
 volumes/
 
-# 🐍 Python
+#  Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -48,21 +48,21 @@ wheels/
 *.egg
 MANIFEST
 
-# 🧪 Tests
+#  Tests
 .coverage
 htmlcov/
 .tox/
 .pytest_cache/
 .cache
 
-# 📊 Logs
+#  Logs
 *.log
 logs/
 log/
 debug.log
 *.debug
 
-# 🔧 Temp files & Backups
+#  Temp files & Backups
 *.tmp
 *.temp
 *.bak
@@ -74,7 +74,7 @@ debug.log
 temp_*
 *_backup.*
 
-# 🌐 Environnements virtuels
+#  Environnements virtuels
 venv/
 env/
 ENV/
@@ -82,13 +82,13 @@ migration_env/
 test_env/
 *.venv
 
-# 📝 IDE & Editors
+#  IDE & Editors
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# 🔄 OS Files
+#  OS Files
 .DS_Store
 .DS_Store?
 ._*
@@ -97,16 +97,16 @@ test_env/
 ehthumbs.db
 Thumbs.db
 
-# 📦 Node.js (si utilisé)
+#  Node.js (
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# 📚 Documentation build
+#  Documentation build
 docs/_build/
 site/
 
-# 📝 Configuration WARP
+#  Configuration WARP
 WARP.md
 .warp/

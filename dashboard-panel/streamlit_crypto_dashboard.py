@@ -1,7 +1,5 @@
 """
-Dashboard Principal CryptoViz - Version Définitive avec Architecture Hybride
-Historique MinIO (filtré intelligemment) + Stream Kafka temps réel
-Gère automatiquement 7000+ fichiers Parquet sans surcharge
+Dashboard Principal CryptoViz
 """
 
 import streamlit as st
@@ -26,7 +24,7 @@ except ImportError as e:
 
 # Configuration Streamlit
 st.set_page_config(
-    page_title="🚀 CryptoViz Dashboard Hybride",
+    page_title="CryptoViz Dashboard Hybride",
     page_icon="₿",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -161,15 +159,15 @@ if 'last_refresh' not in st.session_state:
 # Header principal
 st.markdown("""
 <div class="main-header">
-    <h1>🚀 CryptoViz Dashboard Hybride V4.0</h1>
-    <p>📊 Historique MinIO (Filtré) + ⚡ Stream Kafka Temps Réel</p>
-    <p style="font-size: 14px; opacity: 0.9;">Gestion intelligente de 7000+ fichiers Parquet</p>
+    <h1>CryptoViz Dashboard Hybride V3.2.1</h1>
+    <p>Historique MinIO (Filtré) + Stream Kafka Temps Réel</p>
+    <p style="font-size: 14px; opacity: 0.9;">Gestion intelligente de 10 000+ fichiers Parquet</p>
 </div>
 """, unsafe_allow_html=True)
 
 # Sidebar - Contrôles
 with st.sidebar:
-    st.header("⚙️ Configuration Dashboard")
+    st.header("Configuration Dashboard")
     
     if not DATA_MANAGER_AVAILABLE:
         st.error("❌ Data Manager non disponible")
@@ -178,13 +176,13 @@ with st.sidebar:
     # Status du data manager
     status = st.session_state.data_manager.get_status()
     
-    st.subheader("📊 Status Système")
+    st.subheader("Status Système :")
     
     # MinIO Status
     minio_status = "🟢 Connecté" if status['minio_connected'] else "🔴 Déconnecté"
     st.markdown(f"""
     <div class="status-card">
-        <h4>🗄️ MinIO S3</h4>
+        <h4>MinIO S3</h4>
         <p>{minio_status}</p>
         <p>Historique: {"✅ Chargé" if status['historical_loaded'] else "⏳ En attente"}</p>
         <p>Points: {status['historical_count']:,}</p>
@@ -195,7 +193,7 @@ with st.sidebar:
     kafka_status = "🟢 Actif" if status['kafka_active'] else "🔴 Inactif"
     st.markdown(f"""
     <div class="status-card">
-        <h4>📨 Kafka Stream</h4>
+        <h4>Kafka Stream</h4>
         <p>{kafka_status}</p>
         <p>Buffer: {status['live_buffer_count']} messages</p>
     </div>
@@ -204,14 +202,14 @@ with st.sidebar:
     st.divider()
     
     # Contrôles historique
-    st.subheader("🔧 Configuration Historique")
+    st.subheader("Configuration Historique :")
     
     hours_back = st.slider("🕐 Heures d'historique", 6, 72, 24, 
                           help="Plus de données = plus lent")
     max_files = st.slider("📁 Max fichiers Parquet", 20, 300, 100, 
                          help="Limite pour éviter surcharge")
     
-    if st.button("🔄 Recharger Historique", width="stretch"):
+    if st.button("Recharger Historique", width="stretch"):
         with st.spinner("🔍 Rechargement historique..."):
             success = st.session_state.data_manager.refresh_historical(hours_back, max_files)
             if success:
@@ -223,22 +221,22 @@ with st.sidebar:
     st.divider()
     
     # Auto-refresh
-    auto_refresh = st.checkbox("🔄 Auto-refresh (15s)", value=True)
+    auto_refresh = st.checkbox("Auto-refresh (60s)", value=True)
     
-    if st.button("📊 Force Refresh Data", width="stretch"):
+    if st.button("Force Refresh Data", width="stretch"):
         st.rerun()
     
     # Performance info
     if st.session_state.last_refresh:
         time_since = datetime.now() - st.session_state.last_refresh
-        st.caption(f"⏱️ Dernier refresh: {int(time_since.total_seconds())}s")
+        st.caption(f"Dernier refresh: {int(time_since.total_seconds())}s")
 
 # Main content
 # Récupération des données
 if st.session_state.data_manager:
     start_time = time.time()
     
-    with st.spinner("🔍 Chargement données hybrides..."):
+    with st.spinner("Chargement données hybrides..."):
         combined_data = st.session_state.data_manager.get_combined_data()
     
     load_time = time.time() - start_time
@@ -260,7 +258,7 @@ if st.session_state.data_manager:
             st.markdown(f"""
             <div class="metric-card">
                 <div class="metric-value">{total_points:,}</div>
-                <div class="metric-label">📊 Total Points</div>
+                <div class="metric-label">Total Points</div>
             </div>
             """, unsafe_allow_html=True)
         
@@ -268,7 +266,7 @@ if st.session_state.data_manager:
             st.markdown(f"""
             <div class="metric-card">
                 <div class="metric-value">{cryptos_count}</div>
-                <div class="metric-label">💎 Cryptos Actives</div>
+                <div class="metric-label">Cryptos Actives</div>
             </div>
             """, unsafe_allow_html=True)
         
@@ -276,7 +274,7 @@ if st.session_state.data_manager:
             st.markdown(f"""
             <div class="metric-card">
                 <div class="metric-value">{historical_count:,}</div>
-                <div class="metric-label">📚 Historique</div>
+                <div class="metric-label">Historique</div>
             </div>
             """, unsafe_allow_html=True)
         
@@ -284,7 +282,7 @@ if st.session_state.data_manager:
             st.markdown(f"""
             <div class="metric-card">
                 <div class="metric-value">{live_count}</div>
-                <div class="metric-label">⚡ Live</div>
+                <div class="metric-label">Live</div>
             </div>
             """, unsafe_allow_html=True)
         
@@ -303,7 +301,7 @@ if st.session_state.data_manager:
             
             with col_chart:
                 st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-                st.subheader("📈 Évolution Prix - Vue Hybride")
+                st.subheader("Évolution Prix :")
                 
                 # Top cryptos par volume de données
                 top_cryptos = combined_data['symbol'].value_counts().head(8)
@@ -351,7 +349,7 @@ if st.session_state.data_manager:
                 
                 fig.update_layout(
                     height=600,
-                    title_text="🔄 Données Hybrides: Historique (Bleu) + Live (Orange)",
+                    title_text="Données Hybrides: Historique (Bleu) + Live (Orange)",
                     showlegend=False
                 )
                 
@@ -359,7 +357,7 @@ if st.session_state.data_manager:
                 st.markdown('</div>', unsafe_allow_html=True)
             
             with col_table:
-                st.subheader("🔥 Dernières Données")
+                st.subheader("Dernières Données :")
                 
                 # Table des dernières données
                 if 'timestamp' in combined_data.columns:
@@ -387,7 +385,7 @@ if st.session_state.data_manager:
                     )
                 
                 # Statistiques par crypto
-                st.subheader("💎 Stats par Crypto")
+                st.subheader("Stats par Crypto :")
                 if 'symbol' in combined_data.columns:
                     crypto_stats = combined_data.groupby('symbol').agg({
                         'price': ['count', 'mean', 'std']
@@ -406,43 +404,43 @@ if st.session_state.data_manager:
         col_perf1, col_perf2 = st.columns(2)
         
         with col_perf1:
-            st.subheader("🏗️ Architecture Hybride")
+            st.subheader("Architecture Hybride")
             st.markdown(f"""
-            **📊 Sources de Données:**
-            - 📚 **Historique MinIO**: {historical_count:,} points (filtrés sur {hours_back}h)
-            - ⚡ **Live Kafka**: {live_count} points (buffer temps réel)
-            - 🔗 **Total Combiné**: {total_points:,} points
+            **Sources de Données:**
+            -  **Historique MinIO**: {historical_count:,} points (filtrés sur {hours_back}h)
+            -  **Live Kafka**: {live_count} points (buffer temps réel)
+            -  **Total Combiné**: {total_points:,} points
             
-            **🚀 Optimisations:**
-            - 📁 Max {max_files} fichiers Parquet (sur 7000+)
-            - ⏱️ Filtrage temporel intelligent
-            - 🎯 Échantillonnage par récence
-            - 🔄 Fusion automatique + dédoublonnage
+            ** Optimisations:**
+            -  Max {max_files} fichiers Parquet (sur 7000+)
+            -  Filtrage temporel intelligent
+            -  Échantillonnage par récence
+            -  Fusion automatique + dédoublonnage
             """)
         
         with col_perf2:
-            st.subheader("📈 Performances")
+            st.subheader(" Performances")
             
             # Calcul métriques performance
             data_efficiency = (historical_count / 7000) * 100 if historical_count > 0 else 0
             
             st.markdown(f"""
-            **⚡ Métriques Temps Réel:**
-            - 🔍 **Temps de chargement**: {load_time:.2f}s
-            - 📊 **Efficacité données**: {data_efficiency:.1f}% des 7000 fichiers
-            - 🎯 **Cryptos actives**: {cryptos_count}
-            - 📡 **Stream Kafka**: {"✅ Actif" if status['kafka_active'] else "❌ Inactif"}
+            ** Métriques Temps Réel:**
+            -  **Temps de chargement**: {load_time:.2f}s
+            -  **Efficacité données**: {data_efficiency:.1f}% des 7000 fichiers
+            -  **Cryptos actives**: {cryptos_count}
+            -  **Stream Kafka**: {"✅ Actif" if status['kafka_active'] else "❌ Inactif"}
             
-            **🔧 Status Technique:**
-            - 🗄️ **MinIO**: {"✅ Connecté" if status['minio_connected'] else "❌ Déconnecté"}
-            - 📅 **Dernière MAJ**: {status['last_historical_load'][:19] if status['last_historical_load'] else 'Jamais'}
+            ** Status Technique:**
+            -  **MinIO**: {"✅ Connecté" if status['minio_connected'] else "❌ Déconnecté"}
+            -  **Dernière MAJ**: {status['last_historical_load'][:19] if status['last_historical_load'] else 'Jamais'}
             """)
     
     else:
         st.warning("⚠️ Aucune donnée disponible. Vérifiez les connexions MinIO et Kafka.")
         
         # Debug info
-        st.subheader("🔍 Debug Info")
+        st.subheader(" Debug Info")
         st.json(status)
 
 else:
@@ -450,5 +448,5 @@ else:
 
 # Auto-refresh
 if auto_refresh and st.session_state.data_manager:
-    time.sleep(1)
+    time.sleep(60)
     st.rerun()

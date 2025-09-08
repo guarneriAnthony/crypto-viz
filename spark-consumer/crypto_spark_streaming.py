@@ -26,9 +26,9 @@ class CryptoSparkStreaming:
                     print("✅ Utilisation session Spark existante")
                     return existing_session
             except Exception as e:
-                print(f"📡 Création nouvelle session: {e}")
+                print(f" Création nouvelle session: {e}")
             
-            print("🚀 Création session Spark avec JAR Kafka...")
+            print(" Création session Spark avec JAR Kafka...")
             spark = SparkSession.builder \
                 .appName("CryptoViz-V3-Partitioned") \
                 .config("spark.sql.adaptive.enabled", "true") \
@@ -69,7 +69,7 @@ class CryptoSparkStreaming:
                     print(f"✅ Bucket créé: {bucket}")
                 except Exception as e:
                     if "BucketAlreadyOwnedByYou" in str(e):
-                        print(f"📦 Bucket existant: {bucket}")
+                        print(f" Bucket existant: {bucket}")
                     else:
                         print(f"⚠️ Erreur bucket {bucket}: {e}")
                         
@@ -93,7 +93,7 @@ class CryptoSparkStreaming:
             StructField("ingestion_timestamp", StringType(), True)
         ])
         
-        print("📡 Configuration stream Kafka → Parquet Y/M/D")
+        print(" Configuration stream Kafka → Parquet Y/M/D")
         
         # Lecture Kafka
         kafka_df = self.spark \
@@ -117,7 +117,7 @@ class CryptoSparkStreaming:
             .withColumn("month", month(col("timestamp_dt"))) \
             .withColumn("day", dayofmonth(col("timestamp_dt")))
         
-        print("🚀 Démarrage streaming avec partitioning Y/M/D vers crypto-data-partitioned")
+        print(" Démarrage streaming avec partitioning Y/M/D vers crypto-data-partitioned")
         
         # ÉCRITURE UNIQUE avec partitioning
         stream = enriched_df.writeStream \
@@ -133,7 +133,7 @@ class CryptoSparkStreaming:
         """Écriture partitionnée Y/M/D dans crypto-data-partitioned"""
         try:
             if batch_df.count() > 0:
-                print(f"📊 Batch {batch_id}: {batch_df.count()} records")
+                print(f" Batch {batch_id}: {batch_df.count()} records")
                 
                 # Afficher partitions
                 partitions = batch_df.select("year", "month", "day").distinct().collect()
@@ -156,11 +156,11 @@ class CryptoSparkStreaming:
 
     def run(self):
         """Lancer le streaming"""
-        print("🚀 CryptoViz V3 - Streaming Partitionné Y/M/D")
+        print(" CryptoViz V3 - Streaming Partitionné Y/M/D")
         
         try:
             stream = self.process_crypto_stream()
-            print("⏳ Streaming actif...")
+            print(" Streaming actif...")
             stream.awaitTermination()
             
         except KeyboardInterrupt:
@@ -168,11 +168,11 @@ class CryptoSparkStreaming:
         except Exception as e:
             print(f"❌ Erreur streaming: {e}")
         finally:
-            print("🔚 Fermeture session")
+            print(" Fermeture session")
             self.spark.stop()
 
 def main():
-    print("🚀 Starting Partitioned Spark Streaming...")
+    print(" Starting Partitioned Spark Streaming...")
     pipeline = CryptoSparkStreaming()
     pipeline.run()
 

@@ -18,17 +18,17 @@ class RedpandaCryptoProducer:
             bootstrap_servers=[brokers],
             value_serializer=lambda x: json.dumps(x, default=str).encode('utf-8'),
             key_serializer=lambda x: x.encode('utf-8') if x else None,
-            acks='all',  # Attendre confirmation de toutes les répliques
-            retries=5,   # Retry automatique
+            acks='all',  
+            retries=5,   
             batch_size=16384,
-            linger_ms=10,  # Attendre 10ms pour grouper les messages
+            linger_ms=10,  
             compression_type=None
         )
         
         # Topics configuration
         self.topics = {
-            'raw_data': 'crypto-raw-data',      # Pour batch processing
-            'streaming': 'crypto-streaming'     # Pour streaming temps réel
+            'raw_data': 'crypto-raw-data',      
+            'streaming': 'crypto-streaming'     
         }
         
         print("✅ Redpanda Producer initialisé", flush=True)
@@ -44,7 +44,6 @@ class RedpandaCryptoProducer:
                 bootstrap_servers=[os.getenv("REDPANDA_BROKERS", "redpanda:9092")]
             )
             
-            # Définir les topics à créer
             topics_to_create = [
                 NewTopic(name=self.topics['raw_data'], num_partitions=3, replication_factor=1),
                 NewTopic(name=self.topics['streaming'], num_partitions=3, replication_factor=1)
@@ -79,7 +78,6 @@ class RedpandaCryptoProducer:
                     'schema_version': '2.0'
                 }
                 
-                # Clé de partitioning : crypto_symbol pour distribuer équitablement
                 partition_key = f"{item['symbol']}_{item['source']}"
                 
                 # 1. Topic RAW DATA (pour batch processing)
@@ -129,11 +127,8 @@ class RedpandaCryptoProducer:
 def get_crypto_data_from_providers():
     """Récupère les données depuis tous les providers configurés"""
     all_crypto_data = []
-    
-    # Initialiser les providers
     providers = []
     
-    # Provider CoinMarketCap (si API key disponible)
     api_key = os.getenv("COINMARKETCAP_API_KEY", "your-api-key-here")
     if api_key and api_key != "your-api-key-here":
         providers.append(CoinMarketCapProvider())
@@ -141,7 +136,6 @@ def get_crypto_data_from_providers():
     else:
         print("⚠️ API Key CoinMarketCap manquante, provider désactivé", flush=True)
     
-    # Provider CoinGecko (gratuit, toujours disponible)
     providers.append(CoinGeckoProvider())
     print("✅ Provider CoinGecko activé", flush=True)
     
@@ -160,7 +154,7 @@ def get_crypto_data_from_providers():
                 print(f"✅ {provider.name}: {len(crypto_data)} cryptos récupérées", flush=True)
                 
                 # Debug : afficher les cryptos récupérées
-                for crypto in crypto_data[:3]:  # Afficher les 3 premières
+                for crypto in crypto_data[:3]:  
                     print(f"   • {crypto['name']} ({crypto['symbol']}) - ${crypto['price']:.2f}", flush=True)
                 if len(crypto_data) > 3:
                     print(f"   • ... et {len(crypto_data) - 3} autres", flush=True)
@@ -180,13 +174,10 @@ def main():
     """Boucle principale avec Redpanda Producer"""
     print(" Scraper CryptoViz Multi-Provider avec Redpanda démarré...", flush=True)
     
-    # Initialiser le producer Redpanda
+
     producer = RedpandaCryptoProducer()
-    
-    # Créer les topics si nécessaire
     producer.create_topics_if_needed()
     
-    # Attendre que Redpanda soit prêt
     print("⏳ Attente de la disponibilité Redpanda...", flush=True)
     time.sleep(10)
     
@@ -203,7 +194,6 @@ def main():
             crypto_data = get_crypto_data_from_providers()
             
             if crypto_data:
-                # Publier vers Redpanda
                 producer.publish_crypto_data(crypto_data)
                 print(f"✅ CYCLE {cycle} RÉUSSI - {len(crypto_data)} cryptos traitées", flush=True)
             else:
@@ -213,7 +203,7 @@ def main():
             print(f"❌ ERREUR CYCLE {cycle}: {e}", flush=True)
         
         # Attente entre cycles
-        wait_time = 60  # 1 minutes
+        wait_time = 60  
         next_time = time.strftime('%H:%M:%S', time.localtime(time.time() + wait_time))
         print(f"⏳ Pause {wait_time//60}min... (prochain: {next_time})", flush=True)
         time.sleep(wait_time)

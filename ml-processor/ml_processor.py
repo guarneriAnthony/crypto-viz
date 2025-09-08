@@ -1,7 +1,5 @@
 """
 ML Processor - Architecture standard pour prédictions temps réel
-Consomme Kafka → Calcule ML → Stocke Redis → Dashboard consomme Redis
-
 Architecture: Kafka → ML Processor → Redis → Streamlit (ultra-rapide)
 """
 import json
@@ -98,7 +96,6 @@ class CryptoMLProcessor:
     def test_connections(self):
         """Test des connexions Redis et Kafka"""
         try:
-            # Test Redis
             self.redis_client.ping()
             logger.info("✅ Redis connection OK")
         except Exception as e:
@@ -106,7 +103,6 @@ class CryptoMLProcessor:
             return False
         
         try:
-            # Test Kafka (déjà fait dans __init__)
             logger.info("✅ Kafka consumer OK")
             return True
         except Exception as e:
@@ -136,7 +132,7 @@ class CryptoMLProcessor:
         prices = list(buffer['prices'])
         timestamps = list(buffer['timestamps'])
         
-        if len(prices) < 10:  # Minimum de données requis
+        if len(prices) < 10:  
             return None
         
         try:
@@ -194,15 +190,15 @@ class CryptoMLProcessor:
             key = f"ml:predictions:{symbol}"
             self.redis_client.setex(
                 key, 
-                300,  # TTL 5 minutes
+                300,  
                 json.dumps(predictions)
             )
             
             # Mettre à jour la liste des cryptos disponibles
             self.redis_client.sadd("ml:available_cryptos", symbol)
-            self.redis_client.expire("ml:available_cryptos", 600)  # TTL 10 minutes
+            self.redis_client.expire("ml:available_cryptos", 600)  
             
-            logger.info(f"💾 Prédictions {symbol} stockées (prix: {predictions['current_price']:.2f})")
+            logger.info(f" Prédictions {symbol} stockées (prix: {predictions['current_price']:.2f})")
             
         except Exception as e:
             logger.error(f"❌ Erreur stockage Redis {symbol}: {e}")
@@ -233,7 +229,7 @@ class CryptoMLProcessor:
     
     def run(self):
         """Boucle principale de traitement"""
-        logger.info("🚀 Démarrage ML Processor...")
+        logger.info(" Démarrage ML Processor...")
         
         if not self.test_connections():
             logger.error("❌ Connexions échouées")
@@ -251,7 +247,7 @@ class CryptoMLProcessor:
                 if message_count % 100 == 0:
                     elapsed = time.time() - start_time
                     rate = message_count / elapsed
-                    logger.info(f"📊 Messages traités: {message_count}, Rate: {rate:.1f}/s")
+                    logger.info(f" Messages traités: {message_count}, Rate: {rate:.1f}/s")
                 
         except KeyboardInterrupt:
             logger.info("🛑 Arrêt ML Processor")

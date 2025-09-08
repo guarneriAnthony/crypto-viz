@@ -5,11 +5,7 @@ import os
 from typing import List, Dict
 from .base import BaseProvider
 
-class CoinMarketCapProvider(BaseProvider):
-    """
-    Provider pour récupérer les données depuis CoinMarketCap API
-    """
-    
+class CoinMarketCapProvider(BaseProvider):    
     def __init__(self):
         api_key = os.getenv("COINMARKETCAP_API_KEY", "your-api-key-here")
         super().__init__(
@@ -17,7 +13,7 @@ class CoinMarketCapProvider(BaseProvider):
             base_url="https://pro-api.coinmarketcap.com/v1",
             api_key=api_key
         )
-        self.min_request_interval = 2.0  # CoinMarketCap recommande 2s minimum
+        self.min_request_interval = 2.0  
     
     def get_crypto_data(self) -> List[Dict]:
         """
@@ -39,7 +35,7 @@ class CoinMarketCapProvider(BaseProvider):
             'convert': 'USD'
         }
         
-        print(f"🔄 Récupération depuis {self.name}...", flush=True)
+        print(f" Récupération depuis {self.name}...", flush=True)
         data = self._make_request(url, params=params, headers=headers)
         
         if not data or 'data' not in data:
@@ -65,7 +61,7 @@ class CoinMarketCapProvider(BaseProvider):
                 print(f"⚠️ Erreur parsing {self.name} pour {crypto.get('name', 'unknown')}: {e}", flush=True)
                 continue
         
-        print(f"📊 {self.name}: {len(crypto_list)} cryptos récupérées", flush=True)
+        print(f" {self.name}: {len(crypto_list)} cryptos récupérées", flush=True)
         return crypto_list
     
     def get_source_name(self) -> str:

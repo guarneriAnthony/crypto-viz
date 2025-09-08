@@ -2,29 +2,23 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Installation des dépendances système
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copier les fichiers de requirements
 COPY requirements.txt .
 
-# Ajouter les dépendances Streamlit et ML
 RUN echo "streamlit>=1.28.0" >> requirements.txt
 RUN echo "plotly>=5.15.0" >> requirements.txt
 RUN echo "scikit-learn>=1.3.0" >> requirements.txt
 RUN echo "numpy>=1.24.0" >> requirements.txt
 
-# Installation des dépendances Python
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copier TOUS les fichiers de l'application (solution définitive)
 COPY . .
 
-# Configuration Streamlit
 RUN mkdir -p ~/.streamlit/
 RUN echo "\
 [general]\n\
@@ -37,13 +31,10 @@ enableXsrfProtection = false\n\
 port = 5008\n\
 " > ~/.streamlit/config.toml
 
-# Exposition du port
 EXPOSE 5008
 
-# Variables d'environnement
 ENV PYTHONPATH=/app
 ENV STREAMLIT_SERVER_PORT=5008
 ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
 
-# Lancement du dashboard Streamlit avec page d'accueil multi-pages
 CMD ["streamlit", "run", "streamlit_crypto_home.py", "--server.port=5008", "--server.address=0.0.0.0"]

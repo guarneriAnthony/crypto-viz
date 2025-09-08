@@ -6,8 +6,8 @@ services:
     container_name: crypto_minio
     command: server /data --console-address ":9001"
     ports:
-      - "9002:9000"  # API MinIO sur 9002 (pas 9000 occupé par Portainer)
-      - "9001:9001"  # UI MinIO
+      - "9002:9000"  
+      - "9001:9001"  
     environment:
       - MINIO_ROOT_USER=cryptoviz
       - MINIO_ROOT_PASSWORD=cryptoviz2024
@@ -17,7 +17,7 @@ services:
       - crypto-net
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD", "curl", "-f", "http://192.168.1.76:9000/minio/health/live"]
       interval: 30s
       timeout: 20s
       retries: 3
@@ -81,7 +81,7 @@ services:
       - SPARK_MODE=master
     ports:
       - "7077:7077"
-      - "8082:8080"  # UI Spark Master sur 8082 (pas 8080 occupé)
+      - "8082:8080"  
     networks:
       - crypto-net
     restart: unless-stopped
@@ -119,7 +119,7 @@ services:
     environment:
       - SPARK_MASTER_URL=spark://spark-master:7077
       - KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
-      - MINIO_ENDPOINT=http://minio:9000  # Endpoint INTERNE (pas 9002)
+      - MINIO_ENDPOINT=http://minio:9000  
       - MINIO_ROOT_USER=cryptoviz
       - MINIO_ROOT_PASSWORD=cryptoviz2024
       - MINIO_BUCKET=crypto-data-partitioned
@@ -131,30 +131,6 @@ services:
       - crypto-net
     restart: unless-stopped
 
-#   crypto-dashboard-panel:
-#     build: ./dashboard-panel
-#     container_name: crypto_dashboard_panel
-#     ports:
-#       - "192.168.1.76:5006:5006"  # IP spécifique comme avant
-#     environment:
-#       - MINIO_ENDPOINT=http://minio:9000
-#       - MINIO_ROOT_USER=cryptoviz
-#       - MINIO_ROOT_PASSWORD=cryptoviz2024
-#       - MINIO_BUCKET=crypto-data-partitioned
-#     depends_on:
-#       - minio
-#     networks:
-#       - crypto-net
-#     restart: unless-stopped
-#     healthcheck:
-#       test: ["CMD", "curl", "-f", "http://192.168.1.76:5006"]
-#       interval: 30s
-#       timeout: 10s
-#       retries: 3
-
-
-  # Dashboard moderne v2 (en développement)
-  # Dashboard Streamlit hybride
   crypto-dashboard-streamlit:
     build:
       context: ./dashboard-panel
@@ -173,14 +149,12 @@ services:
       - crypto-net
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5008"]
+      test: ["CMD", "curl", "-f", "http://192.168.1.76:5008"]
       interval: 60s
       timeout: 30s
       retries: 3
       start_period: 30s
 
-
-  # ML Processor - Architecture standard pour prédictions temps réel
   ml-processor:
     build: ./ml-processor
     container_name: crypto_ml_processor

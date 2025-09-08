@@ -54,7 +54,7 @@ st.markdown("""
 # En-tête principal
 st.markdown("""
 <div class="main-header">
-    <h1>🚀 CryptoViz V3.0</h1>
+    <h1>CryptoViz V3.0</h1>
     <h3>Dashboard Multi-Pages avec ML Predictions</h3>
     <p>Analyse temps réel des cryptomonnaies avec prédictions IA</p>
 </div>
@@ -69,28 +69,28 @@ except Exception as e:
     connection_status = False
 
 # Statut du système
-st.subheader("📊 Statut du Système")
+st.subheader(" Statut du Système")
 
 col1, col2, col3 = st.columns(3)
 
 with col1:
     st.metric(
-        "🔗 Connexion ML", 
+        "Connexion ML", 
         "✅ OK" if connection_status else "❌ Erreur",
         help="Statut de la connexion au système ML Redis"
     )
 
 with col2:
     st.metric(
-        "🕐 Dernière MAJ", 
+        "Dernière MAJ", 
         datetime.now().strftime("%H:%M:%S"),
         help="Dernière vérification du statut"
     )
 
 with col3:
     st.metric(
-        "🏗️ Version", 
-        "V3.0",
+        "Version", 
+        "V3.2.1",
         help="Version actuelle de CryptoViz"
     )
 
@@ -98,14 +98,14 @@ if not connection_status:
     st.warning("⚠️ **Système ML indisponible** - Les prédictions ML peuvent ne pas fonctionner")
 
 # Navigation des pages
-st.subheader("📱 Navigation")
+st.subheader("Navigation")
 
 col1, col2 = st.columns(2)
 
 with col1:
     st.markdown("""
     <div class="feature-card">
-        <h4>📊 Dashboard Principal</h4>
+        <h4>Dashboard Principal</h4>
         <p>Vue d'ensemble temps réel des cryptomonnaies</p>
         <ul>
             <li>Métriques en temps réel</li>
@@ -116,13 +116,13 @@ with col1:
     </div>
     """, unsafe_allow_html=True)
     
-    if st.button("🚀 Ouvrir Dashboard Principal", width="stretch", type="primary"):
+    if st.button("Ouvrir Dashboard Principal", width="stretch", type="primary"):
         st.switch_page("pages/1_📊_Dashboard_Principal.py")
 
 with col2:
     st.markdown("""
     <div class="feature-card">
-        <h4>🤖 ML Predictions</h4>
+        <h4>ML Predictions</h4>
         <p>Prédictions de prix par intelligence artificielle</p>
         <ul>
             <li>Architecture Redis ultra-rapide</li>
@@ -133,11 +133,11 @@ with col2:
     </div>
     """, unsafe_allow_html=True)
     
-    if st.button("🔮 Ouvrir ML Predictions", width="stretch", type="secondary"):
+    if st.button("Ouvrir ML Predictions", width="stretch", type="secondary"):
         st.switch_page("pages/2_🤖_ML_Predictions.py")
 
 # Architecture et informations
-st.subheader("🏗️ Architecture")
+st.subheader("Architecture")
 
 st.markdown("""
 ### Stack Technique
@@ -147,16 +147,16 @@ st.markdown("""
 - **Streaming:** RedPanda (Kafka)
 - **Processing:** Apache Spark
 
-### Fonctionnalités V3.0
-- 📊 **Dashboard temps réel** avec métriques live depuis Kafka
-- 🤖 **ML Predictions ultra-rapides** via Redis (millisecondes)
-- 🔄 **Pipeline continu** de données en streaming
-- 💾 **Architecture standard** de l'industrie ML
-- 🚀 **Interface moderne** et responsive
+### Fonctionnalités V3.2.1
+-  **Dashboard temps réel** avec métriques live depuis Kafka
+-  **ML Predictions ultra-rapides** via Redis (millisecondes)
+-  **Pipeline continu** de données en streaming
+-  **Architecture standard** de l'industrie ML
+-  **Interface moderne** et responsive
 """)
 
 # Informations de debugging
-with st.expander("🐛 Informations Debug"):
+with st.expander("Informations Debug"):
     st.write(f"**Timestamp:** {datetime.now()}")
     st.write(f"**Connexion ML:** {'✅ OK' if connection_status else '❌ KO'}")
     st.write(f"**Working Directory:** {os.getcwd()}")
@@ -170,4 +170,4 @@ with st.expander("🐛 Informations Debug"):
         st.write("**Pages:** Dossier pages non trouvé")
 
 st.markdown("---")
-st.markdown("*CryptoViz V3.0 - Analytics & ML Predictions avec Architecture Standard*")
+st.markdown("*CryptoViz V3.2.1 - Analytics & ML Predictions avec Architecture Standard*")

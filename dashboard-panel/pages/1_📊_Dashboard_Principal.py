@@ -1,6 +1,5 @@
 """
 Page Dashboard Principal - Vue d'ensemble des cryptomonnaies
-Adapté depuis streamlit_crypto_dashboard.py pour le multipage
 """
 # Import du dashboard principal existant
 import sys

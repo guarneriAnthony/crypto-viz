@@ -16,7 +16,7 @@ class BaseProvider(ABC):
         self.base_url = base_url
         self.api_key = api_key
         self.last_request_time = 0
-        self.min_request_interval = 1.0  # Minimum 1 seconde entre les requêtes
+        self.min_request_interval = 1.0  
     
     @abstractmethod
     def get_crypto_data(self) -> List[Dict]:
@@ -56,7 +56,7 @@ class BaseProvider(ABC):
         
         if time_since_last_request < self.min_request_interval:
             sleep_time = self.min_request_interval - time_since_last_request
-            print(f"⏳ Rate limiting: attente {sleep_time:.1f}s pour {self.name}", flush=True)
+            print(f" Rate limiting: attente {sleep_time:.1f}s pour {self.name}", flush=True)
             time.sleep(sleep_time)
         
         self.last_request_time = time.time()
@@ -82,12 +82,12 @@ class BaseProvider(ABC):
             return response.json()
             
         except requests.exceptions.Timeout:
-            print(f"⏰ Timeout pour {self.name} après {timeout}s", flush=True)
+            print(f" Timeout pour {self.name} après {timeout}s", flush=True)
             return None
             
         except requests.exceptions.HTTPError as e:
             if response.status_code == 429:
-                print(f"🚦 Rate limit atteint pour {self.name}, retry dans 60s", flush=True)
+                print(f" Rate limit atteint pour {self.name}, retry dans 60s", flush=True)
                 time.sleep(60)
                 return None
             else:
@@ -95,11 +95,11 @@ class BaseProvider(ABC):
                 return None
                 
         except requests.exceptions.RequestException as e:
-            print(f"🌐 Erreur réseau pour {self.name}: {e}", flush=True)
+            print(f" Erreur réseau pour {self.name}: {e}", flush=True)
             return None
             
         except Exception as e:
-            print(f"💥 Erreur inattendue pour {self.name}: {e}", flush=True)
+            print(f" Erreur inattendue pour {self.name}: {e}", flush=True)
             return None
     
     def _format_timestamp(self) -> str:

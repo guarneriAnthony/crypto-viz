@@ -69,7 +69,7 @@ class SmartHistoricalReader:
                     logger.debug(f"Partition {partition_path} non trouvée: {e}")
                     continue
             
-            logger.info(f"🎯 Fichiers récents trouvés: {len(recent_files)} (au lieu de 7000+)")
+            logger.info(f"  Fichiers récents trouvés: {len(recent_files)} (au lieu de 7000+)")
             return recent_files
             
         except Exception as e:
@@ -87,7 +87,7 @@ class SmartHistoricalReader:
         # Prendre les plus récents
         sampled = sorted_files[:max_files]
         
-        logger.info(f"📊 Échantillonnage: {len(sampled)}/{len(all_files)} fichiers sélectionnés")
+        logger.info(f"  Échantillonnage: {len(sampled)}/{len(all_files)} fichiers sélectionnés")
         return sampled
     
     def load_recent_historical_data(self, hours_back: int = 24, max_files: int = 100) -> pd.DataFrame:

@@ -1,6 +1,6 @@
 """
 Modèles de prédiction ML simples pour les prix crypto
-🧠 CONCEPT : Chaque modèle est une classe avec fit() et predict()
+  CONCEPT : Chaque modèle est une classe avec fit() et predict()
 """
 import pandas as pd
 import numpy as np
@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 class MovingAveragePredictor:
     """
     Modèle basé sur les moyennes mobiles
-    🧠 PRINCIPE : Le prix futur = moyenne des N derniers prix
+      PRINCIPE : Le prix futur = moyenne des N derniers prix
     """
     
     def __init__(self, window=20):
@@ -20,7 +20,7 @@ class MovingAveragePredictor:
     def fit(self, data):
         """
         Entraîner le modèle (ici juste stocker les derniers prix)
-        🧠 CONCEPT : fit() prépare le modèle avec les données historiques
+          CONCEPT : fit() prépare le modèle avec les données historiques
         """
         if len(data) < self.window:
             raise ValueError(f"Pas assez de données. Besoin de {self.window}, reçu {len(data)}")
@@ -32,7 +32,7 @@ class MovingAveragePredictor:
     def predict(self, steps=1):
         """
         Prédire les prochains prix
-        🧠 CONCEPT : predict() génère des prédictions futures
+          CONCEPT : predict() génère des prédictions futures
         """
         predictions = []
         current_prices = self.last_prices.copy()
@@ -50,7 +50,7 @@ class MovingAveragePredictor:
 class LinearTrendPredictor:
     """
     Modèle basé sur une tendance linéaire
-    🧠 PRINCIPE : Trace une droite sur les derniers prix et l'extraple
+      PRINCIPE : Trace une droite sur les derniers prix et l'extraple
     """
     
     def __init__(self, window=50):
@@ -63,7 +63,7 @@ class LinearTrendPredictor:
     def fit(self, data):
         """
         Calcule la tendance (pente) des derniers prix
-        🧠 CONCEPT : Régression linéaire simple y = ax + b
+          CONCEPT : Régression linéaire simple y = ax + b
         """
         if len(data) < self.window:
             raise ValueError(f"Pas assez de données. Besoin de {self.window}, reçu {len(data)}")
@@ -84,7 +84,7 @@ class LinearTrendPredictor:
     def predict(self, steps=1):
         """
         Extrapoler la tendance dans le futur
-        🧠 CONCEPT : Continuer la droite : prix_futur = prix_actuel + pente * temps
+          CONCEPT : Continuer la droite : prix_futur = prix_actuel + pente * temps
         """
         predictions = []
         
@@ -98,7 +98,7 @@ class LinearTrendPredictor:
 class MomentumPredictor:
     """
     Modèle basé sur le momentum (vitesse de changement)
-    🧠 PRINCIPE : Si ça monte vite, ça va continuer à monter (un peu)
+      PRINCIPE : Si ça monte vite, ça va continuer à monter (un peu)
     """
     
     def __init__(self, window=10):
@@ -110,7 +110,7 @@ class MomentumPredictor:
     def fit(self, data):
         """
         Calcule le momentum récent
-        🧠 CONCEPT : momentum = (prix_actuel - prix_ancien) / temps
+          CONCEPT : momentum = (prix_actuel - prix_ancien) / temps
         """
         if len(data) < self.window:
             raise ValueError(f"Pas assez de données. Besoin de {self.window}, reçu {len(data)}")
@@ -127,7 +127,7 @@ class MomentumPredictor:
     def predict(self, steps=1):
         """
         Applique le momentum aux prédictions futures
-        🧠 CONCEPT : prix_futur = prix_actuel + momentum * pas_de_temps
+          CONCEPT : prix_futur = prix_actuel + momentum * pas_de_temps
         """
         predictions = []
         current_price = self.last_price
@@ -143,7 +143,7 @@ class MomentumPredictor:
 def get_all_models():
     """
     Retourne tous les modèles disponibles
-    🧠 CONCEPT : Factory pattern pour créer facilement différents modèles
+      CONCEPT : Factory pattern pour créer facilement différents modèles
     """
     return [
         MovingAveragePredictor(window=20),

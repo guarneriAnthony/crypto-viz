@@ -1,5 +1,5 @@
 """
-🚀 ML Processor ULTRA - Architecture nouvelle génération avec données historiques
+   ML Processor ULTRA - Architecture nouvelle génération avec données historiques
 Features: Multi-modèles avancés, prédictions ensemble, détection anomalies, analytics ultra
 Source: Données historiques Redis → Processeur ML Ultra → Dashboard temps réel
 """
@@ -306,17 +306,17 @@ class CryptoMLProcessorUltraHistorical:
             'last_performance_log': time.time()
         }
         
-        logger.info("🚀 ML Processor ULTRA Historical initialisé")
+        logger.info("   ML Processor ULTRA Historical initialisé")
         self._log_startup_info()
     
     def _log_startup_info(self):
         """Log des informations de démarrage avec style"""
         logger.info("=" * 70)
-        logger.info("🎯 CRYPTO ML PROCESSOR ULTRA HISTORICAL")
+        logger.info("  CRYPTO ML PROCESSOR ULTRA HISTORICAL")
         logger.info("=" * 70)
         logger.info(f"📡 Redis: {os.getenv('REDIS_HOST', 'redis')}:{os.getenv('REDIS_PORT', 6379)}")
-        logger.info(f"📊 Source: Données historiques Redis (ml:predictions:*)")
-        logger.info(f"🧠 Modèles: Ensemble, Bollinger, RSI, Anomalies")
+        logger.info(f"  Source: Données historiques Redis (ml:predictions:*)")
+        logger.info(f"  Modèles: Ensemble, Bollinger, RSI, Anomalies")
         logger.info(f"🎨 Output: Interface ultra-moderne avec analytics avancées")
         logger.info("=" * 70)
     
@@ -558,7 +558,7 @@ class CryptoMLProcessorUltraHistorical:
             
             logger.info(f"{color} {symbol}: ${predictions['current_price']:.4f} → "
                        f"${predictions['ensemble_prediction']['value']:.4f} "
-                       f"({change_pct:+.2f}%) [{signal}] 🎯{confidence:.1%}")
+                       f"({change_pct:+.2f}%) [{signal}]  {confidence:.1%}")
             
         except Exception as e:
             logger.error(f"❌ Erreur stockage ultra Redis {symbol}: {e}")
@@ -580,7 +580,7 @@ class CryptoMLProcessorUltraHistorical:
             logger.warning("⚠️  Aucune crypto ML trouvée")
             return
         
-        logger.info(f"🎯 Traitement ultra de {len(cryptos)} cryptos: {', '.join(cryptos)}")
+        logger.info(f"  Traitement ultra de {len(cryptos)} cryptos: {', '.join(cryptos)}")
         
         # Traite chaque crypto avec analytics ultra
         processed = 0
@@ -595,19 +595,19 @@ class CryptoMLProcessorUltraHistorical:
         # Log de performance ultra
         logger.info("=" * 60)
         logger.info("🎊 CYCLE ULTRA TERMINÉ")
-        logger.info(f"📊 Cryptos traitées: {processed}/{len(cryptos)}")
-        logger.info(f"🧠 Prédictions générées: {self.metrics['predictions_generated']}")
-        logger.info(f"🚨 Anomalies détectées: {self.metrics['anomalies_detected']}")
+        logger.info(f"  Cryptos traitées: {processed}/{len(cryptos)}")
+        logger.info(f"  Prédictions générées: {self.metrics['predictions_generated']}")
+        logger.info(f"  Anomalies détectées: {self.metrics['anomalies_detected']}")
         logger.info("=" * 60)
     
     def run(self):
         """Mode ultra-continu avec analytics avancées"""
-        logger.info("🎯 Démarrage ML Processor ULTRA Historical...")
+        logger.info("  Démarrage ML Processor ULTRA Historical...")
         
         try:
             while True:
                 self.run_ultra_cycle()
-                logger.info("⏳ Pause ultra 30 secondes...")
+                logger.info("  Pause ultra 30 secondes...")
                 time.sleep(30)
                 
         except KeyboardInterrupt:

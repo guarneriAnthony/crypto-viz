@@ -19,7 +19,7 @@ import os
 # Configuration de la page avec thème sombre futuriste
 st.set_page_config(
     page_title="ML Ultra Dashboard",
-    page_icon="⚡",
+    page_icon="💲",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -489,7 +489,7 @@ def create_prediction_chart(predictions_data):
         plot_bgcolor='rgba(0,0,0,0)',
         font=dict(family="Rajdhani", size=12, color="white"),
         title=dict(
-            text="🚀 ML Ultra Analytics Dashboard",
+            text="   ML Ultra Analytics Dashboard",
             font=dict(size=24, family="Orbitron"),
             x=0.5
         ),
@@ -541,7 +541,7 @@ def create_market_overview(predictions_data):
         paper_bgcolor='rgba(0,0,0,0)',
         font=dict(family="Rajdhani", size=12, color="white"),
         title=dict(
-            text="🌟 Market Signal Distribution",
+            text=" Market Signal Distribution",
             font=dict(size=20, family="Orbitron"),
             x=0.5
         ),
@@ -562,13 +562,11 @@ def display_crypto_metrics(symbol, data):
     # Couleur selon le signal
     if signal in ['STRONG_BUY', 'BUY']:
         color = 'success'
-        icon = '🚀'
     elif signal in ['STRONG_SELL', 'SELL']:
         color = 'danger'
-        icon = '📉'
     else:
         color = 'warning'
-        icon = '⚖️'
+
     
     col1, col2, col3, col4 = st.columns(4)
     
@@ -591,7 +589,7 @@ def display_crypto_metrics(symbol, data):
     with col3:
         st.markdown(f"""
         <div class="metric-ultra">
-            <div class="metric-value">{icon} {signal}</div>
+            <div class="metric-value">{signal}</div>
             <div class="metric-label">Signal</div>
         </div>
         """, unsafe_allow_html=True)
@@ -611,12 +609,12 @@ def display_technical_analysis(data):
     advanced_analytics = data.get('advanced_analytics', {})
     anomalies = data.get('anomalies', {})
     
-    st.markdown("### 🔬 Analyse Technique Ultra")
+    st.markdown("###   Analyse Technique Ultra")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("**📊 Indicateurs Techniques**")
+        st.markdown("**  Indicateurs Techniques**")
         
         rsi = tech_indicators.get('rsi', 50)
         volatility = tech_indicators.get('volatility', 0)
@@ -652,7 +650,7 @@ def display_technical_analysis(data):
         """, unsafe_allow_html=True)
     
     with col2:
-        st.markdown("**🚨 Détection d'Anomalies**")
+        st.markdown("**  Détection d'Anomalies**")
         
         price_anomaly = anomalies.get('price', {})
         volume_anomaly = anomalies.get('volume', {})
@@ -665,7 +663,7 @@ def display_technical_analysis(data):
             alert_class = 'alert-danger' if severity == 'critical' else 'alert-warning'
             st.markdown(f"""
             <div class="ultra-alert {alert_class}">
-                <strong>🚨 Anomalie Prix:</strong> {anomaly_type.replace('_', ' ').title()}<br>
+                <strong>  Anomalie Prix:</strong> {anomaly_type.replace('_', ' ').title()}<br>
                 <strong>Score:</strong> {score:.2f} | <strong>Sévérité:</strong> {severity.title()}
             </div>
             """, unsafe_allow_html=True)
@@ -682,7 +680,7 @@ def display_technical_analysis(data):
             
             st.markdown(f"""
             <div class="ultra-alert alert-warning">
-                <strong>📊 Anomalie Volume:</strong> {vol_type.replace('_', ' ').title()}<br>
+                <strong>  Anomalie Volume:</strong> {vol_type.replace('_', ' ').title()}<br>
                 <strong>Ratio:</strong> {ratio:.1f}x la normale
             </div>
             """, unsafe_allow_html=True)
@@ -700,7 +698,7 @@ def display_multi_horizon_predictions(data):
     if not multi_horizon:
         return
     
-    st.markdown("### ⏰ Prédictions Multi-Horizon")
+    st.markdown("###   Prédictions Multi-Horizon")
     
     current_price = data.get('current_price', 0)
     
@@ -766,8 +764,8 @@ def main():
     # Header ultra-futuriste
     st.markdown("""
     <div class="ultra-header">
-        <h1 class="ultra-title typing-effect">⚡ ML ULTRA DASHBOARD</h1>
-        <p class="ultra-subtitle">Intelligence Artificielle Avancée • Prédictions Ensemble • Analytics Temps Réel</p>
+        <h1 class="ultra-title typing-effect"> ML ULTRA DASHBOARD</h1>
+        <p class="ultra-subtitle">Intelligence Artificielle Avancée • Prédictions • Analytics Temps Réel</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -782,13 +780,6 @@ def main():
         </div>
         """, unsafe_allow_html=True)
         return
-    
-    # Sidebar pour la sélection
-    st.sidebar.markdown("""
-    <div class="ultra-card">
-        <h3 style="color: var(--primary-color); margin-top: 0;">🎛️ Contrôles Ultra</h3>
-    </div>
-    """, unsafe_allow_html=True)
     
     # Récupération des cryptos disponibles
     available_cryptos = redis_client.get_available_cryptos()
@@ -805,13 +796,13 @@ def main():
     # Sélecteur de crypto
     crypto_options = ["Toutes les cryptos"] + sorted(available_cryptos)
     selected_crypto = st.sidebar.selectbox(
-        "🎯 Sélectionner une Crypto",
+        "  Sélectionner une Crypto",
         crypto_options,
         help="Choisissez une crypto spécifique ou affichez toutes les cryptos"
     )
     
     # Auto-refresh
-    auto_refresh = st.sidebar.checkbox("🔄 Rafraîchissement Auto", value=True)
+    auto_refresh = st.sidebar.checkbox("  Rafraîchissement Auto", value=True)
     if auto_refresh:
         refresh_interval = st.sidebar.slider("Intervalle (secondes)", 10, 120, 30)
     
@@ -833,7 +824,7 @@ def main():
     if not predictions_data:
         st.markdown("""
         <div class="ultra-alert alert-warning">
-            <strong>⏳ En attente de données...</strong><br>
+            <strong>  En attente de données...</strong><br>
             Les prédictions ML Ultra sont en cours de génération.
         </div>
         """, unsafe_allow_html=True)
@@ -845,7 +836,7 @@ def main():
     # Performance globale
     performance = redis_client.get_ultra_performance()
     if performance:
-        st.markdown("### 📊 Performance ML Ultra")
+        st.markdown("###   Performance ML Ultra")
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
@@ -885,14 +876,14 @@ def main():
     
     # Vue d'ensemble du marché (pour toutes les cryptos)
     if selected_crypto == "Toutes les cryptos" and len(predictions_data) > 1:
-        st.markdown("### 🌟 Vue d'Ensemble du Marché")
+        st.markdown("###   Vue d'Ensemble du Marché")
         market_fig = create_market_overview(predictions_data)
         if market_fig:
             st.plotly_chart(market_fig, use_container_width=True)
     
     # Analyse détaillée par crypto
     for symbol, data in predictions_data.items():
-        st.markdown(f"## 🚀 {symbol} - Analyse Ultra")
+        st.markdown(f"##    {symbol} - Analyse Ultra")
         
         # Métriques principales
         display_crypto_metrics(symbol, data)
@@ -912,7 +903,7 @@ def main():
         # Modèles individuels
         individual_models = data.get('individual_models', {})
         if individual_models:
-            st.markdown("### 🧠 Prédictions par Modèle")
+            st.markdown("###   Prédictions par Modèle")
             
             model_cols = st.columns(len(individual_models))
             current_price = data.get('current_price', 0)

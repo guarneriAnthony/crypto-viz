@@ -26,7 +26,7 @@ except ImportError as e:
 
 # Configuration Streamlit
 st.set_page_config(
-    page_title="🚀 CryptoViz Dashboard Hybride",
+    page_title="   CryptoViz Dashboard Hybride",
     page_icon="₿",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -161,8 +161,8 @@ if 'last_refresh' not in st.session_state:
 # Header principal
 st.markdown("""
 <div class="main-header">
-    <h1>🚀 CryptoViz Dashboard Hybride V4.0</h1>
-    <p>📊 Historique MinIO (Filtré) + ⚡ Stream Kafka Temps Réel</p>
+    <h1>   CryptoViz Dashboard Hybride V4.0</h1>
+    <p>  Historique MinIO (Filtré) + ⚡ Stream Kafka Temps Réel</p>
     <p style="font-size: 14px; opacity: 0.9;">Gestion intelligente de 7000+ fichiers Parquet</p>
 </div>
 """, unsafe_allow_html=True)
@@ -178,7 +178,7 @@ with st.sidebar:
     # Status du data manager
     status = st.session_state.data_manager.get_status()
     
-    st.subheader("📊 Status Système")
+    st.subheader("  Status Système")
     
     # MinIO Status
     minio_status = "🟢 Connecté" if status['minio_connected'] else "🔴 Déconnecté"
@@ -186,7 +186,7 @@ with st.sidebar:
     <div class="status-card">
         <h4>🗄️ MinIO S3</h4>
         <p>{minio_status}</p>
-        <p>Historique: {"✅ Chargé" if status['historical_loaded'] else "⏳ En attente"}</p>
+        <p>Historique: {"✅ Chargé" if status['historical_loaded'] else "  En attente"}</p>
         <p>Points: {status['historical_count']:,}</p>
     </div>
     """, unsafe_allow_html=True)
@@ -211,7 +211,7 @@ with st.sidebar:
     max_files = st.slider("📁 Max fichiers Parquet", 20, 300, 100, 
                          help="Limite pour éviter surcharge")
     
-    if st.button("🔄 Recharger Historique", width="stretch"):
+    if st.button("  Recharger Historique", width="stretch"):
         with st.spinner("🔍 Rechargement historique..."):
             success = st.session_state.data_manager.refresh_historical(hours_back, max_files)
             if success:
@@ -223,9 +223,9 @@ with st.sidebar:
     st.divider()
     
     # Auto-refresh
-    auto_refresh = st.checkbox("🔄 Auto-refresh (15s)", value=True)
+    auto_refresh = st.checkbox("  Auto-refresh (15s)", value=True)
     
-    if st.button("📊 Force Refresh Data", width="stretch"):
+    if st.button("  Force Refresh Data", width="stretch"):
         st.rerun()
     
     # Performance info
@@ -260,7 +260,7 @@ if st.session_state.data_manager:
             st.markdown(f"""
             <div class="metric-card">
                 <div class="metric-value">{total_points:,}</div>
-                <div class="metric-label">📊 Total Points</div>
+                <div class="metric-label">  Total Points</div>
             </div>
             """, unsafe_allow_html=True)
         
@@ -351,7 +351,7 @@ if st.session_state.data_manager:
                 
                 fig.update_layout(
                     height=600,
-                    title_text="🔄 Données Hybrides: Historique (Bleu) + Live (Orange)",
+                    title_text="  Données Hybrides: Historique (Bleu) + Live (Orange)",
                     showlegend=False
                 )
                 
@@ -408,16 +408,16 @@ if st.session_state.data_manager:
         with col_perf1:
             st.subheader("🏗️ Architecture Hybride")
             st.markdown(f"""
-            **📊 Sources de Données:**
+            **  Sources de Données:**
             - 📚 **Historique MinIO**: {historical_count:,} points (filtrés sur {hours_back}h)
             - ⚡ **Live Kafka**: {live_count} points (buffer temps réel)
             - 🔗 **Total Combiné**: {total_points:,} points
             
-            **🚀 Optimisations:**
+            **   Optimisations:**
             - 📁 Max {max_files} fichiers Parquet (sur 7000+)
             - ⏱️ Filtrage temporel intelligent
-            - 🎯 Échantillonnage par récence
-            - 🔄 Fusion automatique + dédoublonnage
+            -   Échantillonnage par récence
+            -   Fusion automatique + dédoublonnage
             """)
         
         with col_perf2:
@@ -429,8 +429,8 @@ if st.session_state.data_manager:
             st.markdown(f"""
             **⚡ Métriques Temps Réel:**
             - 🔍 **Temps de chargement**: {load_time:.2f}s
-            - 📊 **Efficacité données**: {data_efficiency:.1f}% des 7000 fichiers
-            - 🎯 **Cryptos actives**: {cryptos_count}
+            -   **Efficacité données**: {data_efficiency:.1f}% des 7000 fichiers
+            -   **Cryptos actives**: {cryptos_count}
             - 📡 **Stream Kafka**: {"✅ Actif" if status['kafka_active'] else "❌ Inactif"}
             
             **🔧 Status Technique:**

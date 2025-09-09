@@ -184,7 +184,7 @@ sequenceDiagram
 | **Signaux trading** | Aucun | BUY/SELL/HOLD | **Trading automatique** |
 | **Modèles ML** | 0 | 4 modèles | **Intelligence prédictive** |
 
-### 📊 Métriques Opérationnelles
+###   Métriques Opérationnelles
 ```bash
  Pipeline Performance:
 ├── Scraping: 60s intervals
@@ -244,9 +244,9 @@ curl http://192.168.1.76:5008
 | ** Dashboard Home** | http://192.168.1.76:5008 | Accueil navigation moderne | ✅ **Nouveau** |
 | ** Dashboard Principal** | http://192.168.1.76:5008 | Métriques temps réel Kafka | 🔧 **Amélioré** |
 | ** ML Predictions** | http://192.168.1.76:5008 | Prédictions ML ultra-rapides | ✅ **Nouveau** |
-| ** Redpanda Console** | http://192.168.1.76:8090 | Monitoring Kafka topics | 📊 **Stable** |
-| ** Spark UI** | http://192.168.1.76:8082 | Jobs et performance Spark | 📊 **Stable** |
-| ** MinIO Console** | http://192.168.1.76:9002 | Stockage S3 historique | 📊 **Stable** |
+| ** Redpanda Console** | http://192.168.1.76:8090 | Monitoring Kafka topics |   **Stable** |
+| ** Spark UI** | http://192.168.1.76:8082 | Jobs et performance Spark |   **Stable** |
+| ** MinIO Console** | http://192.168.1.76:9002 | Stockage S3 historique |   **Stable** |
 
 ###  Identifiants par défaut
 ```bash
@@ -448,7 +448,7 @@ class MLModels:
         return weighted_average
 ```
 
-### 📊 Ajouter une Page Dashboard
+###   Ajouter une Page Dashboard
 ```python
 # dashboard-panel/pages/3_Your_Page.py
 import streamlit as st
@@ -554,7 +554,7 @@ docker-compose up -d
 watch "docker exec crypto_redis redis-cli KEYS 'ml:*' | wc -l"
 ```
 
-### 📊 Diagnostic Performances
+###   Diagnostic Performances
 ```bash
 # Pipeline end-to-end
 time curl -s http://192.168.1.76:5008 >/dev/null

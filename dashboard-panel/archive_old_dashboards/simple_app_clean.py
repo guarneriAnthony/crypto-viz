@@ -21,7 +21,7 @@ def create_simple_dashboard():
         # Info sur les données
         if not df.empty:
             data_info = f"""
-            📊 **CryptoViz Dashboard Simple**
+              **CryptoViz Dashboard Simple**
             - **{len(df)} lignes** de données
             - **{df['symbol'].nunique()} cryptos** différentes  
             - **Dernière mise à jour**: {datetime.now().strftime('%H:%M:%S')}
@@ -59,7 +59,7 @@ def create_simple_dashboard():
 
 # Servir l'application
 if __name__ == "__main__":
-    print("🚀 Démarrage Dashboard Simple CryptoViz...")
+    print("   Démarrage Dashboard Simple CryptoViz...")
     
     pn.config.allow_websocket_origin = ["*"]
     app = create_simple_dashboard()

@@ -18,7 +18,7 @@ sys.path.append('/app')
 from app import create_dashboard
 
 if __name__ == "__main__":
-    print(f"🚀 Démarrage Dashboard Panel sur {IP_MACHINE}:5006")
+    print(f"   Démarrage Dashboard Panel sur {IP_MACHINE}:5006")
     
     # Configuration Panel avec IP machine
     pn.config.global_css = []

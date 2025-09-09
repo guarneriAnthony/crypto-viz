@@ -178,7 +178,7 @@ def main():
     producer = RedpandaCryptoProducer()
     producer.create_topics_if_needed()
     
-    print("⏳ Attente de la disponibilité Redpanda...", flush=True)
+    print("  Attente de la disponibilité Redpanda...", flush=True)
     time.sleep(10)
     
     cycle = 0
@@ -205,7 +205,7 @@ def main():
         # Attente entre cycles
         wait_time = 60  
         next_time = time.strftime('%H:%M:%S', time.localtime(time.time() + wait_time))
-        print(f"⏳ Pause {wait_time//60}min... (prochain: {next_time})", flush=True)
+        print(f"  Pause {wait_time//60}min... (prochain: {next_time})", flush=True)
         time.sleep(wait_time)
 
 if __name__ == "__main__":

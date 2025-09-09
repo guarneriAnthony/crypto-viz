@@ -61,7 +61,7 @@ class HybridDataManager:
         # Initialisation connexions
         self._init_minio()
         
-        logger.info("🚀 HybridDataManager initialisé (version FIXÉE)")
+        logger.info("   HybridDataManager initialisé (version FIXÉE)")
     
     def _init_minio(self):
         """Initialise la connexion MinIO"""
@@ -103,7 +103,7 @@ class HybridDataManager:
                 except Exception:
                     continue
             
-            logger.info(f"🎯 {len(recent_files)} fichiers trouvés (filtrage intelligent)")
+            logger.info(f"  {len(recent_files)} fichiers trouvés (filtrage intelligent)")
             return recent_files
             
         except Exception as e:
@@ -119,7 +119,7 @@ class HybridDataManager:
         sorted_files = sorted(files, reverse=True)
         sampled_files = sorted_files[:max_files]
         
-        logger.info(f"📊 Échantillonnage: {len(sampled_files)}/{len(files)} fichiers")
+        logger.info(f"  Échantillonnage: {len(sampled_files)}/{len(files)} fichiers")
         return sampled_files
     
     def load_historical_data(self, hours_back: int = None, max_files: int = None, force_reload: bool = False) -> bool:
@@ -134,7 +134,7 @@ class HybridDataManager:
         if not force_reload and self._last_historical_load:
             time_since_load = datetime.now() - self._last_historical_load
             if time_since_load.total_seconds() < self.historical_refresh_interval:
-                logger.debug(f"📊 Historique récent ({time_since_load.total_seconds():.0f}s), pas de recharge")
+                logger.debug(f"  Historique récent ({time_since_load.total_seconds():.0f}s), pas de recharge")
                 return True
         
         if not self.fs:
@@ -227,7 +227,7 @@ class HybridDataManager:
             while not self._kafka_should_stop:
                 consumer = None
                 try:
-                    logger.info(f"🎯 Tentative de connexion Kafka (essai {retry_count + 1})...")
+                    logger.info(f"  Tentative de connexion Kafka (essai {retry_count + 1})...")
                     
                     consumer = KafkaConsumer(
                         self.kafka_topic,
@@ -252,7 +252,7 @@ class HybridDataManager:
                     
                     self._kafka_consumer_active = True
                     retry_count = 0  # Reset du compteur en cas de succès
-                    logger.info(f"🎯 Kafka consumer connecté: {self.kafka_topic}")
+                    logger.info(f"  Kafka consumer connecté: {self.kafka_topic}")
                     
                     # Boucle de consommation INFINIE
                     for message in consumer:
@@ -287,7 +287,7 @@ class HybridDataManager:
                         logger.error(f"❌ Abandon après {max_retries} tentatives")
                         break
                     
-                    logger.info(f"🔄 Reconnexion dans {retry_delay}s...")
+                    logger.info(f"  Reconnexion dans {retry_delay}s...")
                     time.sleep(retry_delay)
                     retry_delay = min(retry_delay * 2, 60)  # Exponential backoff
                     
@@ -325,12 +325,12 @@ class HybridDataManager:
         try:
             # Chargement automatique historique si nécessaire
             if auto_load_historical and self._historical_data.empty:
-                logger.info("🔄 Auto-chargement historique...")
+                logger.info("  Auto-chargement historique...")
                 self.load_historical_data()
             
             # Démarrage automatique Kafka si nécessaire
             if not self._kafka_consumer_active:
-                logger.info("🔄 Auto-démarrage Kafka consumer...")
+                logger.info("  Auto-démarrage Kafka consumer...")
                 self.start_kafka_consumer()
             
             # Conversion buffer live en DataFrame

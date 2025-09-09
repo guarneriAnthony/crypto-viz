@@ -25,7 +25,7 @@ except ImportError as e:
 # Configuration Streamlit
 st.set_page_config(
     page_title="CryptoViz Dashboard Hybride",
-    page_icon="₿",
+    page_icon="💲",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -159,7 +159,7 @@ if 'last_refresh' not in st.session_state:
 # Header principal
 st.markdown("""
 <div class="main-header">
-    <h1>CryptoViz Dashboard Hybride V3.2.1</h1>
+    <h1>CryptoViz Dashboard Hybride  V4.0</h1>
     <p>Historique MinIO (Filtré) + Stream Kafka Temps Réel</p>
     <p style="font-size: 14px; opacity: 0.9;">Gestion intelligente de 10 000+ fichiers Parquet</p>
 </div>
@@ -184,7 +184,7 @@ with st.sidebar:
     <div class="status-card">
         <h4>MinIO S3</h4>
         <p>{minio_status}</p>
-        <p>Historique: {"✅ Chargé" if status['historical_loaded'] else "⏳ En attente"}</p>
+        <p>Historique: {"✅ Chargé" if status['historical_loaded'] else "  En attente"}</p>
         <p>Points: {status['historical_count']:,}</p>
     </div>
     """, unsafe_allow_html=True)

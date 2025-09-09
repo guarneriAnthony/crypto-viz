@@ -1,5 +1,5 @@
 """
-🌟 ML Ultra Simple - Version garantie fonctionnelle
+  ML Ultra Simple - Version garantie fonctionnelle
 """
 
 import streamlit as st
@@ -15,7 +15,7 @@ import os
 # Configuration
 st.set_page_config(
     page_title="ML Ultra Simple",
-    page_icon="🌟",
+    page_icon="💲",
     layout="wide"
 )
 
@@ -58,7 +58,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Interface
-st.markdown('<h1 class="ultra-title">🌟 ML ULTRA SIMPLE</h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="ultra-title">  ML ULTRA SIMPLE</h1>', unsafe_allow_html=True)
 
 # Redis Client
 @st.cache_resource
@@ -110,18 +110,18 @@ with col1:
     st.subheader("🎛️ Contrôles")
     
     # Auto-refresh
-    auto_refresh = st.checkbox("🔄 Auto-refresh", value=True)
+    auto_refresh = st.checkbox("  Auto-refresh", value=True)
     if auto_refresh:
         refresh_rate = st.slider("Secondes", 5, 60, 15)
 
 with col2:
-    st.subheader("📊 Données ML Ultra")
+    st.subheader("  Données ML Ultra")
 
 # Données
 predictions_data = get_ml_data()
 
 if not predictions_data:
-    st.warning("⏳ En attente de données ML Ultra...")
+    st.warning("  En attente de données ML Ultra...")
     if auto_refresh:
         time.sleep(2)
         st.rerun()
@@ -140,13 +140,13 @@ avg_confidence = sum(data.get('ensemble_prediction', {}).get('confidence', 0)
                     for data in predictions_data.values()) / len(predictions_data)
 
 with col1:
-    st.metric("🚀 Signaux BUY", buy_signals)
+    st.metric("   Signaux BUY", buy_signals)
 with col2:
     st.metric("📉 Signaux SELL", sell_signals)
 with col3:
     st.metric("⚖️ Signaux HOLD", len(predictions_data) - buy_signals - sell_signals)
 with col4:
-    st.metric("🎯 Confiance Moy.", f"{avg_confidence:.1%}")
+    st.metric("  Confiance Moy.", f"{avg_confidence:.1%}")
 
 # Table des cryptos
 st.subheader("💰 Cryptomonnaies")
@@ -228,7 +228,7 @@ fig.update_layout(
 st.plotly_chart(fig, use_container_width=True)
 
 # Graphique changements en %
-st.subheader("📊 Changements Prédits (%)")
+st.subheader("  Changements Prédits (%)")
 
 colors = ['#00ff88' if c > 0 else '#ff3366' if c < 0 else '#ffaa00' for c in changes]
 
@@ -256,7 +256,7 @@ fig2.add_hline(y=0, line_dash="dash", line_color="gray")
 st.plotly_chart(fig2, use_container_width=True)
 
 # Graphique distribution des signaux
-st.subheader("🎯 Distribution des Signaux")
+st.subheader("  Distribution des Signaux")
 
 signal_counts = pd.Series(signals).value_counts()
 
@@ -284,4 +284,4 @@ if auto_refresh:
 
 # Footer
 st.markdown("---")
-st.markdown("🌟 **ML Ultra Simple** - Prédictions en temps réel avec garantie d'affichage")
+st.markdown("  **ML Ultra Simple** - Prédictions en temps réel avec garantie d'affichage")

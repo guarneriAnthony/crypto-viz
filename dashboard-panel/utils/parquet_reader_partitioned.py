@@ -1,5 +1,5 @@
 """
-CryptoViz V3.0 - Reader SIMPLIFIÉ qui fonctionne vraiment
+CryptoViz  V4.0 - Reader SIMPLIFIÉ qui fonctionne vraiment
 Lecture directe des données partitionnées
 """
 

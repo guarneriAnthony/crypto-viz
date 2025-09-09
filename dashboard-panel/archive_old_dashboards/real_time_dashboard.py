@@ -49,7 +49,7 @@ class RealTimeCryptoDashboard:
     def update_data(self):
         """Met à jour les données en temps réel"""
         try:
-            logger.info("🔄 Updating dashboard data...")
+            logger.info("  Updating dashboard data...")
             self.last_update = datetime.now()
             
             # Mettre à jour les cartes crypto
@@ -116,7 +116,7 @@ class RealTimeCryptoDashboard:
             <!-- Navigation -->
             <div style="flex: 1; padding: 0 10px;">
                 <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin: 4px 0; border-radius: 8px; background: #4f7cee; color: #ffffff;">
-                    <span style="font-size: 16px;">📊</span>
+                    <span style="font-size: 16px;"> </span>
                     <span style="font-size: 14px; font-weight: 500;">Live Overview</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin: 4px 0; border-radius: 8px; background: transparent; color: #94a3b8; cursor: pointer;">
